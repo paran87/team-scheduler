@@ -39,18 +39,14 @@ export default async function TeamPage({ params }: TeamPageProps) {
             ← Dashboard
           </Link>
           <div className="org-letterhead">
-            <div className="org-header-left">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/assets/dpwh-logo.png" alt="Department of Public Works and Highways" className="org-seal org-seal-dpwh" />
-              <div className="org-header-text">
-                <p className="org-kicker">Republic of the Philippines</p>
-                <p className="org-agency">Department of Public Works and Highways</p>
-              </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/assets/dpwh-logo.png" alt="Department of Public Works and Highways" className="org-seal org-seal-dpwh" />
+            <div className="org-header-text">
+              <p className="org-kicker">Republic of the Philippines</p>
+              <p className="org-agency">Department of Public Works and Highways</p>
             </div>
-            <div className="org-header-side org-header-side-end">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/assets/bagong-pilipinas.png" alt="Bagong Pilipinas" className="org-seal org-seal-bagong" />
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/assets/bagong-pilipinas.png" alt="Bagong Pilipinas" className="org-seal org-seal-bagong" />
           </div>
         </div>
       </header>
