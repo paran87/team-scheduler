@@ -1,22 +1,23 @@
 "use client";
 
 import { TeamAvatar } from "./TeamAvatar";
+import { TeamLink } from "./TeamLink";
 
 export function Legend() {
   return (
     <div className="legend">
-      <div className="legend-item">
+      <TeamLink team="usec" className="legend-item team-nav-link">
         <span className="dot" style={{ background: "var(--usec)" }} /> Team USEC
         <TeamAvatar teamKey="usec" size={36} />
-      </div>
-      <div className="legend-item">
+      </TeamLink>
+      <TeamLink team="b" className="legend-item team-nav-link">
         <span className="dot" style={{ background: "var(--teamb)" }} /> Team B
         <TeamAvatar teamKey="b" size={36} />
-      </div>
-      <div className="legend-item">
+      </TeamLink>
+      <TeamLink team="a" className="legend-item team-nav-link">
         <span className="dot" style={{ background: "var(--teama)" }} /> Team A
         <TeamAvatar teamKey="a" size={36} />
-      </div>
+      </TeamLink>
       <div className="legend-item">
         <span className="dot" style={{ background: "var(--special)" }} /> Special Event
       </div>

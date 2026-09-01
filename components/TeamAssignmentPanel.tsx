@@ -5,6 +5,7 @@ import { TEAM_META } from "@/lib/schedule-data";
 import { TEAM_ASSIGNMENTS, TEAM_ASSIGNMENT_ORDER, groupRowsByRegion } from "@/lib/team-assignments";
 import type { TeamFilter, TeamKey } from "@/lib/types";
 import { TeamAvatar } from "./TeamAvatar";
+import { TeamLink } from "./TeamLink";
 
 type TeamAssignmentPanelProps = {
   focusTeam?: TeamFilter;
@@ -100,10 +101,10 @@ export function TeamAssignmentPanel({ focusTeam = "all" }: TeamAssignmentPanelPr
                 className={`assignment-card team-${group.team}`}
               >
                 <header className="assignment-card-header">
-                  <div className="assignment-card-title">
+                  <TeamLink team={group.team} className="assignment-card-title team-nav-link">
                     <span className={`team-chip ${meta.chipSolid}`}>{meta.label}</span>
                     <TeamAvatar teamKey={group.team} size={42} />
-                  </div>
+                  </TeamLink>
                   <p>
                     {group.rows.length} location{group.rows.length === 1 ? "" : "s"} · {regionCount} region
                     {regionCount === 1 ? "" : "s"}

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { shiftMonth } from "@/lib/calendar";
-import type { TabName, TeamFilter, TeamKey } from "@/lib/types";
+import type { TabName, TeamFilter } from "@/lib/types";
 import { TopBar } from "./TopBar";
 import { Legend } from "./Legend";
 import { CalendarGrid } from "./CalendarGrid";
@@ -54,15 +54,6 @@ export function Dashboard() {
     if (tab !== "assignment") setAssignmentFocus("all");
   }
 
-  function goToTeamAssignments(team: TeamKey) {
-    setAssignmentFocus(team);
-    setActiveTab("assignment");
-    closePanelSilently();
-    window.setTimeout(() => {
-      document.getElementById(`assignment-${team}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 80);
-  }
-
   return (
     <>
       <TopBar
@@ -111,7 +102,7 @@ export function Dashboard() {
         </div>
       </main>
 
-      <Footer onTabChange={switchTab} onTeamClick={goToTeamAssignments} />
+      <Footer onTabChange={switchTab} />
 
       <div
         className={`backdrop${panelOpen ? " show" : ""}`}

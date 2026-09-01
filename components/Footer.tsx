@@ -1,14 +1,14 @@
 "use client";
 
-import type { TabName, TeamKey } from "@/lib/types";
+import Link from "next/link";
+import type { TabName } from "@/lib/types";
 import { BrandLogo } from "./BrandLogo";
 
 type FooterProps = {
   onTabChange: (tab: TabName) => void;
-  onTeamClick: (team: TeamKey) => void;
 };
 
-export function Footer({ onTabChange, onTeamClick }: FooterProps) {
+export function Footer({ onTabChange }: FooterProps) {
   function goToTab(tab: TabName) {
     onTabChange(tab);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -39,15 +39,15 @@ export function Footer({ onTabChange, onTeamClick }: FooterProps) {
           </div>
           <div className="footer-col">
             <h5>Teams</h5>
-            <button className="footer-link" onClick={() => onTeamClick("usec")}>
+            <Link className="footer-link" href="/teams/usec">
               Team USEC
-            </button>
-            <button className="footer-link" onClick={() => onTeamClick("b")}>
+            </Link>
+            <Link className="footer-link" href="/teams/b">
               Team B
-            </button>
-            <button className="footer-link" onClick={() => onTeamClick("a")}>
+            </Link>
+            <Link className="footer-link" href="/teams/a">
               Team A
-            </button>
+            </Link>
           </div>
         </div>
       </div>

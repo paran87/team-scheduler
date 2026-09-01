@@ -3,6 +3,7 @@
 import { MONTH_NAMES, TEAM_META } from "@/lib/schedule-data";
 import { getBlocksForMonth } from "@/lib/calendar";
 import { TeamAvatar } from "./TeamAvatar";
+import { TeamLink } from "./TeamLink";
 
 type ActivityTimelineProps = {
   viewYear: number;
@@ -65,12 +66,14 @@ export function ActivityTimeline({ viewYear, viewMonth }: ActivityTimelineProps)
                   {block.event ? <p className="note">{block.event}</p> : null}
                 </div>
               </div>
-              <span style={{ display: "flex", alignItems: "center", gap: 0 }}>
-                <span className="activity-team-chip" style={{ background: meta.color }}>
-                  {meta.label}
+              <TeamLink team={block.team} className="team-nav-link">
+                <span style={{ display: "flex", alignItems: "center", gap: 0 }}>
+                  <span className="activity-team-chip" style={{ background: meta.color }}>
+                    {meta.label}
+                  </span>
+                  <TeamAvatar teamKey={block.team} size={32} />
                 </span>
-                <TeamAvatar teamKey={block.team} size={32} />
-              </span>
+              </TeamLink>
             </div>
           </div>
         );

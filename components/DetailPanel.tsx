@@ -4,6 +4,7 @@ import { DAY_NAMES, MONTH_NAMES, TEAM_META } from "@/lib/schedule-data";
 import { buildPerDayMap } from "@/lib/calendar";
 import { getPlaceImage } from "@/lib/place-images";
 import { TeamAvatar } from "./TeamAvatar";
+import { TeamLink } from "./TeamLink";
 
 type DetailPanelProps = {
   viewYear: number;
@@ -93,10 +94,10 @@ export function DetailPanel({
                 </div>
               </div>
               <div className="team-body">
-                <div className="team-name-row">
+                <TeamLink team={entry.team} className="team-name-row team-nav-link">
                   <span className={`team-chip ${meta.chipSolid}`}>{meta.label}</span>
                   <TeamAvatar teamKey={entry.team} size={40} />
-                </div>
+                </TeamLink>
                 <p className="team-place">{entry.place}</p>
                 {entry.event ? <p className="team-event">{entry.event}</p> : null}
                 {rangeText ? <p className="team-range">Duration: {rangeText}</p> : null}
