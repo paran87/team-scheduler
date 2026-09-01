@@ -465,19 +465,24 @@ footer {
 .org-letterhead {
   display: flex; align-items: center; justify-content: space-between; gap: 20px;
 }
-.org-header-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
-.org-header-text { padding-left: 0; min-width: 0; text-align: left; }
+.org-header-left { display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1 1 auto; }
+.org-header-text {
+  padding-left: 0; min-width: 0; flex: 1 1 0; text-align: left;
+  container-type: inline-size;
+}
 .org-header-side { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 .org-header-side-end { justify-content: flex-end; }
 .org-seal { width: auto; object-fit: contain; display: block; }
 .org-seal-dpwh { height: 72px; }
 .org-seal-bagong { height: 78px; mix-blend-mode: screen; }
 .org-kicker {
-  margin: 0; font-size: 15px; letter-spacing: .08em; text-transform: uppercase;
+  margin: 0; white-space: nowrap;
+  font-size: clamp(8px, 6.2cqw, 13px); letter-spacing: .05em; text-transform: uppercase;
   color: #f2f3ff; font-weight: 800;
 }
 .org-agency {
-  margin: 4px 0 0; font-size: 12px; letter-spacing: .06em; text-transform: uppercase;
+  margin: 4px 0 0; white-space: nowrap;
+  font-size: clamp(7px, 4.7cqw, 11px); letter-spacing: 0; text-transform: none;
   color: #c9a227; font-weight: 700;
 }
 .org-main { max-width: 1100px; width: 100%; margin: 0 auto; padding: 36px 20px 64px; container-type: inline-size; }
@@ -486,17 +491,22 @@ footer {
   width: 92px; height: 92px; margin: 0 auto 18px; border-radius: 22px;
 }
 .org-hero h1 {
-  margin: 0 0 16px; font-weight: 800; letter-spacing: .01em; line-height: 1.25;
-  white-space: nowrap; color: var(--ink);
-  font-size: clamp(16px, 3.4vw, 34px);
-  font-size: min(34px, 4.2cqw);
+  margin: 0 0 16px; font-weight: 800; letter-spacing: .02em; line-height: 1.25;
+  white-space: nowrap; text-transform: uppercase; color: var(--ink);
+  font-size: min(30px, 3cqw);
 }
 .org-team-pill {
   display: inline-block; color: white; font-size: 11px; font-weight: 800; letter-spacing: .08em;
   text-transform: uppercase; padding: 7px 14px; border-radius: 999px; margin-bottom: 12px;
 }
-.org-hero h2 { margin: 0 0 8px; font-size: 28px; }
-.org-hero p { margin: 0; color: var(--muted); font-weight: 600; }
+.org-hero h2 {
+  margin: 0 0 8px; white-space: nowrap;
+  font-size: min(28px, 7.4cqw);
+}
+.org-hero p {
+  margin: 0; color: var(--muted); font-weight: 600; white-space: nowrap;
+  font-size: min(15px, 3.25cqw);
+}
 
 .org-chart { display: flex; flex-direction: column; align-items: center; }
 .org-stem { width: 2px; height: 34px; }
@@ -509,6 +519,7 @@ footer {
   width: 220px; background: white; border-radius: 20px; padding: 22px 16px 18px;
   text-align: center; border: 1px solid var(--border); border-top: 4px solid var(--usec);
   box-shadow: var(--shadow); transition: transform .2s ease, box-shadow .2s ease;
+  container-type: inline-size;
 }
 .org-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
 .org-card.featured {
@@ -524,9 +535,16 @@ footer {
   width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
   color: white; font-family: var(--font-sora), Sora, sans-serif; font-weight: 800; font-size: 28px;
 }
-.org-card h3 { margin: 0 0 6px; font-size: 15px; line-height: 1.3; }
-.org-card.featured h3 { font-size: 18px; }
-.org-card p { margin: 0; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
+.org-card h3 {
+  margin: 0 0 6px; font-size: clamp(12px, 6.6cqw, 15px); line-height: 1.3;
+  white-space: nowrap;
+}
+.org-card.featured h3 { font-size: clamp(14px, 7.2cqw, 18px); }
+.org-card p {
+  margin: 0; color: var(--muted); font-weight: 700; letter-spacing: 0;
+  text-transform: uppercase; white-space: nowrap;
+  font-size: clamp(9px, 4.4cqw, 11px);
+}
 
 .org-other-teams {
   display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 48px;
@@ -539,13 +557,14 @@ footer {
 .org-other-link:hover { transform: translateY(-2px); border-color: var(--usec); color: var(--usec); }
 
 @media (max-width: 720px) {
-  .org-header { padding: 18px 16px 22px; }
-  .org-letterhead { gap: 10px; flex-wrap: nowrap; }
+  .org-header { padding: 16px 12px 20px; }
+  .org-letterhead { gap: 8px; flex-wrap: nowrap; }
+  .org-header-left { gap: 8px; }
   .org-header-text { padding-left: 0; }
-  .org-kicker { font-size: 11px; letter-spacing: .06em; }
-  .org-agency { font-size: 9px; }
-  .org-seal-dpwh { height: 48px; }
-  .org-seal-bagong { height: 52px; }
+  .org-kicker { font-size: clamp(7px, 5.8cqw, 11px); letter-spacing: .04em; }
+  .org-agency { font-size: clamp(7px, 4.5cqw, 9px); }
+  .org-seal-dpwh { height: 42px; }
+  .org-seal-bagong { height: 46px; }
   .org-hero .brand-icon { width: 72px; height: 72px; margin-bottom: 14px; }
   .org-hero h1 { white-space: nowrap; }
   .org-card, .org-card.featured, .org-member-col { width: 100%; max-width: 280px; }
