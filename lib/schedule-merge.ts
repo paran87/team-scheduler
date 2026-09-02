@@ -57,7 +57,8 @@ export function getVisibleBlocks(
         current.place === next.place &&
         current.event === next.event
       ) {
-        current = { ...current, end: day };
+        const ongoing: ScheduleBlock = current;
+        current = { ...ongoing, end: day };
       } else {
         flush();
         current = next;
