@@ -1,27 +1,5 @@
 [
   {
-    "id": "2026-09-30__a",
-    "date": "2026-09-30",
-    "team": "a",
-    "location": "Manila",
-    "activity": "Site inspection",
-    "remarks": "Created from admin for live dashboard",
-    "updatedAt": "2026-09-02T04:29:51.045Z",
-    "lat": 14.5904492,
-    "lng": 120.9803621
-  },
-  {
-    "id": "2026-09-30__b",
-    "date": "2026-09-30",
-    "team": "b",
-    "location": "Cebu City",
-    "activity": "Live update test",
-    "remarks": "Should appear without reload",
-    "updatedAt": "2026-09-02T04:31:55.784Z",
-    "lat": 10.2934946,
-    "lng": 123.9018183
-  },
-  {
     "id": "2026-10-02__usec",
     "date": "2026-10-02",
     "team": "usec",

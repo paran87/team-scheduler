@@ -4,12 +4,13 @@ import Link from "next/link";
 import { MONTH_NAMES } from "@/lib/schedule-data";
 import type { TabName } from "@/lib/types";
 import { BrandLogo } from "./BrandLogo";
+import { TabIcon } from "./TabIcons";
 
-const TABS: { id: TabName; icon: string; label: string }[] = [
-  { id: "calendar", icon: "📅", label: "Calendar" },
-  { id: "activity", icon: "📋", label: "Activity" },
-  { id: "assignment", icon: "🗺️", label: "Team Assignment" },
-  { id: "map", icon: "📍", label: "Show Map" },
+const TABS: { id: TabName; label: string }[] = [
+  { id: "calendar", label: "Calendar" },
+  { id: "activity", label: "Activity" },
+  { id: "assignment", label: "Team Assignment" },
+  { id: "map", label: "Show Map" },
 ];
 
 type TopBarProps = {
@@ -70,7 +71,8 @@ export function TopBar({
             className={`tab-btn${activeTab === tab.id ? " active" : ""}`}
             onClick={() => onTabChange(tab.id)}
           >
-            <span className="tab-icon">{tab.icon}</span> {tab.label}
+            <TabIcon name={tab.id} />
+            {tab.label}
           </button>
         ))}
       </nav>

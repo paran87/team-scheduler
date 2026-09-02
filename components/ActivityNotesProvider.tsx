@@ -33,7 +33,9 @@ export function ActivityNotesProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       const next = await loadNotes();
-      if (next) setNotes(next);
+      if (next) {
+        setNotes((current) => (JSON.stringify(current) === JSON.stringify(next) ? current : next));
+      }
     } finally {
       setLoading(false);
     }

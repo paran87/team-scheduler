@@ -38,13 +38,16 @@ export function BackendConsole() {
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [status, setStatus] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
   const [monitorMonth] = useState({ year: 2026, month: 8 });
 
   async function refresh() {
     const response = await fetch("/api/activity-notes", { cache: "no-store" });
     if (!response.ok) return;
     const data = (await response.json()) as { notes?: ActivityNote[] };
-    setNotes(data.notes ?? []);
+    const next = data.notes ?? [];
+    setNotes((current) => (JSON.stringify(current) === JSON.stringify(next) ? current : next));
   }
 
   useEffect(() => {
@@ -146,11 +149,83 @@ export function BackendConsole() {
     }
   }
 
+  const selectedNote = findNote(notes, form.date, form.team);
+
+  function requestDelete(id: string) {
+    setConfirmId(id);
+    setStatus("");
+  }
+
   async function onDelete(id: string) {
-    const response = await fetch(`/api/activity-notes?id=${encodeURIComponent(id)}`, { method: "DELETE" });
-    if (!response.ok) return;
-    notifyActivityNotesChanged();
-    await refresh();
+    setDeletingId(id);
+    setStatus("");
+    try {
+      const response = await fetch("/api/activity-notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", id }),
+      });
+      const data = (await response.json()) as { notes?: ActivityNote[]; error?: string };
+      if (!response.ok) {
+        setStatus(data.error || "Could not remove this entry.");
+        return;
+      }
+      setNotes(data.notes ?? []);
+      notifyActivityNotesChanged();
+      setConfirmId(null);
+      const parsedId = id.split("__");
+      if (parsedId[0] === form.date && parsedId[1] === form.team) {
+        setForm({
+          date: form.date,
+          team: form.team,
+          location: scheduledLocation(form.date, form.team),
+          activity: "",
+          remarks: "",
+        });
+      }
+      setStatus("Removed. The public calendar, Activity tab, and map will update now.");
+    } catch {
+      setStatus("Could not reach the server.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  function DeleteButton({ id, label }: { id: string; label: string }) {
+    const pending = confirmId === id;
+    return (
+      <span className="backend-delete-wrap">
+        {pending ? (
+          <>
+            <button
+              type="button"
+              className="backend-delete is-confirm"
+              disabled={Boolean(deletingId)}
+              onClick={() => void onDelete(id)}
+            >
+              {deletingId === id ? "Removing…" : "Yes, remove"}
+            </button>
+            <button
+              type="button"
+              className="backend-delete-cancel"
+              disabled={Boolean(deletingId)}
+              onClick={() => setConfirmId(null)}
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className="backend-delete"
+            disabled={Boolean(deletingId)}
+            onClick={() => requestDelete(id)}
+          >
+            {label}
+          </button>
+        )}
+      </span>
+    );
   }
 
   return (
@@ -256,9 +331,12 @@ export function BackendConsole() {
               />
             </label>
 
-            <button className="backend-submit" type="submit" disabled={saving}>
-              {saving ? "Saving…" : "Save to dashboard"}
-            </button>
+            <div className="backend-actions">
+              <button className="backend-submit" type="submit" disabled={saving || Boolean(deletingId)}>
+                {saving ? "Saving…" : "Save to dashboard"}
+              </button>
+              {selectedNote ? <DeleteButton id={selectedNote.id} label="Remove from dashboard" /> : null}
+            </div>
             {status ? <p className="backend-status">{status}</p> : null}
           </form>
 
@@ -277,10 +355,13 @@ export function BackendConsole() {
                     <th>Location</th>
                     <th>activity</th>
                     <th>remarks</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {monitorRows.map((row) => (
+                  {monitorRows.map((row) => {
+                    const saved = findNote(notes, row.date, row.team);
+                    return (
                     <tr
                       key={`${row.date}-${row.team}`}
                       className={row.date === form.date && row.team === form.team ? "is-selected" : ""}
@@ -300,8 +381,16 @@ export function BackendConsole() {
                       <td className={row.onCalendar ? "" : "is-muted"}>{row.place}</td>
                       <td>{row.activity || "—"}</td>
                       <td>{row.remarks || "—"}</td>
+                      <td>
+                        {saved ? (
+                          <DeleteButton id={saved.id} label="Remove" />
+                        ) : (
+                          <span className="is-muted">Printed schedule</span>
+                        )}
+                      </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -322,9 +411,7 @@ export function BackendConsole() {
                     <p>activity: {note.activity || "—"}</p>
                     <p>remarks: {note.remarks || "—"}</p>
                   </div>
-                  <button type="button" className="backend-delete" onClick={() => void onDelete(note.id)}>
-                    Remove
-                  </button>
+                  <DeleteButton id={note.id} label="Remove" />
                 </li>
               ))}
             </ul>
