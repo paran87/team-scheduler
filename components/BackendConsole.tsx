@@ -156,7 +156,7 @@ export function BackendConsole() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    const data = (await response.json()) as { error?: string };
+    const data = (await response.json().catch(() => ({}))) as { error?: string };
     if (!response.ok) {
       throw new Error(data.error || "Could not save this entry.");
     }
@@ -204,6 +204,9 @@ export function BackendConsole() {
   }
 
   async function onDelete(id: string) {
+    const existing = notes.find((note) => note.id === id);
+    const parsed = id.split("__");
+    const printedRow = isPrintedAssignment(parsed[0] ?? "", (parsed[1] as BlockTeam) ?? "usec");
     setDeletingId(id);
     setStatus("");
     try {
@@ -212,7 +215,7 @@ export function BackendConsole() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "delete", id }),
       });
-      const data = (await response.json()) as { notes?: ActivityNote[]; error?: string };
+      const data = (await response.json().catch(() => ({}))) as { notes?: ActivityNote[]; error?: string };
       if (!response.ok) {
         setStatus(data.error || "Could not remove this entry.");
         return;
@@ -220,11 +223,12 @@ export function BackendConsole() {
       setNotes(data.notes ?? []);
       notifyActivityNotesChanged();
       setConfirmId(null);
-      const parts = id.split("__");
       setStatus(
-        isPrintedAssignment(parts[0] ?? "", (parts[1] as BlockTeam) ?? "usec")
-          ? "Hidden from the public dashboard. Save again to restore it."
-          : "Removed. The public calendar, Activity tab, and map will update now.",
+        existing
+          ? "Removed your added data. The public calendar, Activity tab, and map will update now."
+          : printedRow
+            ? "Hidden from the public dashboard. Save again to restore it."
+            : "Removed. The public calendar, Activity tab, and map will update now.",
       );
     } catch {
       setStatus("Could not reach the server.");
@@ -431,7 +435,13 @@ export function BackendConsole() {
               {printed || selectedNote ? (
                 <DeleteButton
                   id={noteId(form.date, form.team)}
-                  label={printed ? "Hide from dashboard" : "Remove from dashboard"}
+                  label={
+                    selectedNote
+                      ? "Remove added data"
+                      : printed
+                        ? "Hide from dashboard"
+                        : "Remove from dashboard"
+                  }
                 />
               ) : null}
             </div>
@@ -503,7 +513,10 @@ export function BackendConsole() {
                             Restore
                           </button>
                         ) : (
-                          <DeleteButton id={noteId(row.date, row.team)} label="Remove" />
+                          <DeleteButton
+                            id={noteId(row.date, row.team)}
+                            label={findNote(notes, row.date, row.team) ? "Remove added data" : "Hide"}
+                          />
                         )}
                       </td>
                     </tr>

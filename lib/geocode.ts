@@ -17,6 +17,7 @@ export async function resolveCoords(location: string): Promise<{ lat: number; ln
     const response = await fetch(url, {
       headers: { Accept: "application/json", "User-Agent": "team-scheduler/1.0" },
       cache: "no-store",
+      signal: AbortSignal.timeout(2500),
     });
     if (!response.ok) return undefined;
     const results = (await response.json()) as Array<{ lat?: string; lon?: string }>;

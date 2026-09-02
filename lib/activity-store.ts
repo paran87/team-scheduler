@@ -1,4 +1,5 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import {
   isBlockTeam,
@@ -13,43 +14,67 @@ import { resolveCoords } from "./geocode";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "activity-notes.json");
+const TMP_FILE = path.join(tmpdir(), "team-scheduler-activity-notes.json");
 
-async function ensureFile() {
-  await mkdir(DATA_DIR, { recursive: true });
-  try {
-    await readFile(DATA_FILE, "utf8");
-  } catch {
-    await writeFile(DATA_FILE, "[]\n", "utf8");
+type NotesCache = { notes: ActivityNote[] | null };
+const globalForNotes = globalThis as typeof globalThis & { __teamSchedulerNotes?: NotesCache };
+
+function cache(): NotesCache {
+  if (!globalForNotes.__teamSchedulerNotes) {
+    globalForNotes.__teamSchedulerNotes = { notes: null };
   }
+  return globalForNotes.__teamSchedulerNotes;
+}
+
+function normalizeNotes(parsed: unknown): ActivityNote[] {
+  if (!Array.isArray(parsed)) return [];
+  return parsed.filter((note): note is ActivityNote => {
+    if (!note || typeof note.id !== "string" || typeof note.date !== "string" || !isBlockTeam(note.team)) {
+      return false;
+    }
+    if (typeof note.location !== "string") note.location = "";
+    if (typeof note.event !== "string") delete note.event;
+    if (note.hidden !== true) delete note.hidden;
+    return typeof note.activity === "string" && typeof note.remarks === "string";
+  });
+}
+
+async function readFromPath(file: string): Promise<ActivityNote[] | null> {
+  try {
+    const raw = await readFile(file, "utf8");
+    return normalizeNotes(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
+
+async function writeToPath(file: string, payload: string) {
+  await mkdir(path.dirname(file), { recursive: true });
+  await writeFile(file, payload, "utf8");
 }
 
 export async function readActivityNotes(): Promise<ActivityNote[]> {
-  await ensureFile();
-  const raw = await readFile(DATA_FILE, "utf8");
-  try {
-    const parsed = JSON.parse(raw) as ActivityNote[];
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((note) => {
-      if (!note || typeof note.id !== "string" || typeof note.date !== "string" || !isBlockTeam(note.team)) {
-        return false;
-      }
-      if (typeof note.location !== "string") note.location = "";
-      if (typeof note.event !== "string") delete note.event;
-      if (note.hidden !== true) delete note.hidden;
-      return typeof note.activity === "string" && typeof note.remarks === "string";
-    });
-  } catch {
-    return [];
-  }
+  const mem = cache();
+  if (mem.notes) return mem.notes.map((note) => ({ ...note }));
+
+  const loaded = (await readFromPath(DATA_FILE)) ?? (await readFromPath(TMP_FILE)) ?? [];
+  mem.notes = loaded;
+  return loaded.map((note) => ({ ...note }));
 }
 
 export async function writeActivityNotes(notes: ActivityNote[]) {
-  await ensureFile();
   const sorted = [...notes].sort((a, b) => {
     if (a.date === b.date) return a.team.localeCompare(b.team);
     return a.date < b.date ? -1 : 1;
   });
-  await writeFile(DATA_FILE, `${JSON.stringify(sorted, null, 2)}\n`, "utf8");
+  cache().notes = sorted.map((note) => ({ ...note }));
+  const payload = `${JSON.stringify(sorted, null, 2)}\n`;
+
+  const writes = await Promise.allSettled([writeToPath(DATA_FILE, payload), writeToPath(TMP_FILE, payload)]);
+  const persisted = writes.some((result) => result.status === "fulfilled");
+  if (!persisted) {
+    console.warn("activity-notes: disk is read-only; keeping changes in memory for this server.");
+  }
   return sorted;
 }
 
@@ -102,22 +127,25 @@ export async function deleteActivityNote(id: string) {
 }
 
 export async function removeDashboardEntry(id: string) {
-  const parsed = parseNoteId(id);
-  if (!parsed) return deleteActivityNote(id);
-  if (!isPrintedAssignment(parsed.date, parsed.team)) {
+  const notes = await readActivityNotes();
+  const existing = notes.find((note) => note.id === id);
+  if (existing) {
     return deleteActivityNote(id);
   }
 
-  const notes = await readActivityNotes();
-  const existing = notes.find((note) => note.id === id);
-  await upsertActivityNote({
-    date: parsed.date,
-    team: parsed.team,
-    location: existing?.location || scheduledLocation(parsed.date, parsed.team),
-    activity: existing?.activity ?? "",
-    remarks: existing?.remarks ?? "",
-    event: existing?.event || scheduledEvent(parsed.date, parsed.team),
-    hidden: true,
-  });
-  return readActivityNotes();
+  const parsed = parseNoteId(id);
+  if (parsed && isPrintedAssignment(parsed.date, parsed.team)) {
+    await upsertActivityNote({
+      date: parsed.date,
+      team: parsed.team,
+      location: scheduledLocation(parsed.date, parsed.team),
+      activity: "",
+      remarks: "",
+      event: scheduledEvent(parsed.date, parsed.team),
+      hidden: true,
+    });
+    return readActivityNotes();
+  }
+
+  return notes;
 }
