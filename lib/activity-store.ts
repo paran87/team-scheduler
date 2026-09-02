@@ -1,6 +1,14 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { isBlockTeam, noteId, type ActivityNote } from "./activity-notes";
+import {
+  isBlockTeam,
+  isPrintedAssignment,
+  noteId,
+  parseNoteId,
+  scheduledEvent,
+  scheduledLocation,
+  type ActivityNote,
+} from "./activity-notes";
 import { resolveCoords } from "./geocode";
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -26,6 +34,8 @@ export async function readActivityNotes(): Promise<ActivityNote[]> {
         return false;
       }
       if (typeof note.location !== "string") note.location = "";
+      if (typeof note.event !== "string") delete note.event;
+      if (note.hidden !== true) delete note.hidden;
       return typeof note.activity === "string" && typeof note.remarks === "string";
     });
   } catch {
@@ -49,13 +59,19 @@ export async function upsertActivityNote(input: {
   location: string;
   activity: string;
   remarks: string;
+  event?: string;
+  hidden?: boolean;
 }) {
   const notes = await readActivityNotes();
   const id = noteId(input.date, input.team);
   const location = input.location.trim();
+  const event = (input.event ?? "").trim();
   const previous = notes.find((note) => note.id === id);
-  const coords =
-    previous && previous.location === location && previous.lat != null && previous.lng != null
+  const coords = input.hidden
+    ? previous?.lat != null && previous.lng != null
+      ? { lat: previous.lat, lng: previous.lng }
+      : undefined
+    : previous && previous.location === location && previous.lat != null && previous.lng != null
       ? { lat: previous.lat, lng: previous.lng }
       : await resolveCoords(location);
 
@@ -67,6 +83,8 @@ export async function upsertActivityNote(input: {
     activity: input.activity.trim(),
     remarks: input.remarks.trim(),
     updatedAt: new Date().toISOString(),
+    ...(event ? { event } : {}),
+    ...(input.hidden ? { hidden: true } : {}),
     ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
   };
   const index = notes.findIndex((note) => note.id === id);
@@ -81,4 +99,25 @@ export async function deleteActivityNote(id: string) {
   const next = notes.filter((note) => note.id !== id);
   await writeActivityNotes(next);
   return next;
+}
+
+export async function removeDashboardEntry(id: string) {
+  const parsed = parseNoteId(id);
+  if (!parsed) return deleteActivityNote(id);
+  if (!isPrintedAssignment(parsed.date, parsed.team)) {
+    return deleteActivityNote(id);
+  }
+
+  const notes = await readActivityNotes();
+  const existing = notes.find((note) => note.id === id);
+  await upsertActivityNote({
+    date: parsed.date,
+    team: parsed.team,
+    location: existing?.location || scheduledLocation(parsed.date, parsed.team),
+    activity: existing?.activity ?? "",
+    remarks: existing?.remarks ?? "",
+    event: existing?.event || scheduledEvent(parsed.date, parsed.team),
+    hidden: true,
+  });
+  return readActivityNotes();
 }

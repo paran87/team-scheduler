@@ -60,7 +60,7 @@ export function ActivityTimeline({ viewYear, viewMonth, focusId }: ActivityTimel
                 <div className="activity-left">
                   <div className="activity-date-badge">{rangeLabel}</div>
                   <div className="activity-info">
-                    <p className="place">★ {block.event}</p>
+                    <p className="place">★ {fields.event || block.event}</p>
                     <p className="note">Special company-wide event</p>
                     <ActivityFields
                       location={fields.location || block.event}

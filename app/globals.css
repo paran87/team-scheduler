@@ -685,7 +685,20 @@ footer {
 }
 .backend-table td { padding: 10px 12px; border-top: 1px solid var(--border); vertical-align: top; }
 .backend-table tr.is-selected td { background: #eef0ff; }
+.backend-table tr.is-editable { cursor: pointer; }
+.backend-table tr.is-editable:hover td { background: #f7f8fd; }
+.backend-table tr.is-hidden td { opacity: 0.7; }
 .backend-table .is-muted { color: var(--muted); font-style: italic; }
+.backend-check {
+  display: flex; align-items: flex-start; gap: 8px; margin: 0 0 14px;
+  font-size: 13px; font-weight: 700; color: #39407a;
+}
+.backend-check input { margin-top: 3px; }
+.backend-edit, .backend-restore {
+  border: 1px solid var(--border); background: white; border-radius: 10px; padding: 8px 12px;
+  cursor: pointer; font-weight: 800; color: var(--usec); margin-right: 8px;
+}
+.backend-restore { color: #065f46; }
 .backend-team {
   display: inline-block; color: white; font-size: 11px; font-weight: 800; letter-spacing: .04em;
   text-transform: uppercase; padding: 4px 8px; border-radius: 999px; white-space: nowrap;

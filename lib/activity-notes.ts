@@ -1,4 +1,4 @@
-import { buildPerDayMap } from "./calendar";
+import { getBlocksForMonth } from "./calendar";
 import type { BlockTeam, ScheduleBlock, TeamKey } from "./types";
 
 export const ACTIVITY_CHANNEL = "activity-notes";
@@ -11,6 +11,8 @@ export type ActivityNote = {
   activity: string;
   remarks: string;
   updatedAt: string;
+  event?: string;
+  hidden?: boolean;
   lat?: number;
   lng?: number;
 };
@@ -45,14 +47,38 @@ export function findNote(notes: ActivityNote[], date: string, team: BlockTeam) {
   return notes.find((note) => note.date === date && note.team === team);
 }
 
+export function parseNoteId(id: string) {
+  const separator = id.lastIndexOf("__");
+  if (separator <= 0) return null;
+  const date = id.slice(0, separator);
+  const team = id.slice(separator + 2);
+  if (!parseDateKey(date) || !isBlockTeam(team)) return null;
+  return { date, team };
+}
+
+export function scheduledBlock(date: string, team: BlockTeam) {
+  const parsed = parseDateKey(date);
+  if (!parsed) return undefined;
+  return getBlocksForMonth(parsed.year, parsed.monthIndex).find(
+    (block) => block.team === team && parsed.day >= block.start && parsed.day <= block.end,
+  );
+}
+
+export function isPrintedAssignment(date: string, team: BlockTeam) {
+  return Boolean(scheduledBlock(date, team));
+}
+
 export function mergeNotes(notes: ActivityNote[]) {
-  const location = [...new Set(notes.map((note) => (note.location ?? "").trim()).filter(Boolean))];
-  const activity = [...new Set(notes.map((note) => note.activity.trim()).filter(Boolean))];
-  const remarks = [...new Set(notes.map((note) => note.remarks.trim()).filter(Boolean))];
+  const visible = notes.filter((note) => !note.hidden);
+  const location = [...new Set(visible.map((note) => (note.location ?? "").trim()).filter(Boolean))];
+  const activity = [...new Set(visible.map((note) => note.activity.trim()).filter(Boolean))];
+  const remarks = [...new Set(visible.map((note) => note.remarks.trim()).filter(Boolean))];
+  const event = [...new Set(visible.map((note) => (note.event ?? "").trim()).filter(Boolean))];
   return {
     location: location.join(" · ") || undefined,
     activity: activity.join(" · ") || undefined,
     remarks: remarks.join(" · ") || undefined,
+    event: event.join(" · ") || undefined,
   };
 }
 
@@ -65,7 +91,7 @@ export function notesForBlock(
   const matched: ActivityNote[] = [];
   for (let day = block.start; day <= block.end; day++) {
     const note = findNote(notes, toDateKey(year, monthIndex, day), block.team);
-    if (note) matched.push(note);
+    if (note && !note.hidden) matched.push(note);
   }
   return mergeNotes(matched);
 }
@@ -82,9 +108,10 @@ export function teamLabel(team: BlockTeam | TeamKey) {
 }
 
 export function scheduledLocation(date: string, team: BlockTeam) {
-  const parsed = parseDateKey(date);
-  if (!parsed) return "";
-  const entries = buildPerDayMap(parsed.year, parsed.monthIndex)[parsed.day] ?? [];
-  const match = entries.find((entry) => entry.team === team);
+  const match = scheduledBlock(date, team);
   return match?.place || match?.event || "";
+}
+
+export function scheduledEvent(date: string, team: BlockTeam) {
+  return scheduledBlock(date, team)?.event || "";
 }

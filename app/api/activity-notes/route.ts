@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { isBlockTeam, parseDateKey } from "@/lib/activity-notes";
-import { deleteActivityNote, readActivityNotes, upsertActivityNote } from "@/lib/activity-store";
+import { readActivityNotes, removeDashboardEntry, upsertActivityNote } from "@/lib/activity-store";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +20,8 @@ export async function POST(request: NextRequest) {
     location?: string;
     activity?: string;
     remarks?: string;
+    event?: string;
+    hidden?: boolean;
   };
 
   if (body.action === "delete") {
@@ -27,7 +29,7 @@ export async function POST(request: NextRequest) {
     if (!id) {
       return Response.json({ error: "Missing note id." }, { status: 400, headers: NO_STORE });
     }
-    const notes = await deleteActivityNote(id);
+    const notes = await removeDashboardEntry(id);
     return Response.json({ notes }, { headers: NO_STORE });
   }
 
@@ -36,12 +38,14 @@ export async function POST(request: NextRequest) {
   const location = typeof body.location === "string" ? body.location : "";
   const activity = typeof body.activity === "string" ? body.activity : "";
   const remarks = typeof body.remarks === "string" ? body.remarks : "";
+  const event = typeof body.event === "string" ? body.event : "";
+  const hidden = body.hidden === true;
 
   if (!parseDateKey(date) || !isBlockTeam(team)) {
     return Response.json({ error: "Enter a valid date and team." }, { status: 400, headers: NO_STORE });
   }
 
-  const note = await upsertActivityNote({ date, team, location, activity, remarks });
+  const note = await upsertActivityNote({ date, team, location, activity, remarks, event, hidden });
   return Response.json({ note }, { headers: NO_STORE });
 }
 
@@ -50,6 +54,6 @@ export async function DELETE(request: NextRequest) {
   if (!id) {
     return Response.json({ error: "Missing note id." }, { status: 400, headers: NO_STORE });
   }
-  const notes = await deleteActivityNote(id);
+  const notes = await removeDashboardEntry(id);
   return Response.json({ notes }, { headers: NO_STORE });
 }

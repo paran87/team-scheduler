@@ -119,7 +119,7 @@ export function CalendarGrid({
                 {cell.isToday ? <span className="today-tag">Today</span> : null}
               </div>
               {cell.special ? (
-                <div className="special-label">★ {cell.special.event}</div>
+                <div className="special-label">★ {cell.special.event || "Special Event"}</div>
               ) : cell.entries.length ? (
                 <>
                   <div className="cell-events">
@@ -130,7 +130,7 @@ export function CalendarGrid({
                       return (
                         <div key={`${entry.team}-${index}`} className={`event-chip ${meta.chip}`}>
                           <span className="dot-sm" style={{ background: dotColor(entry.team) }} />
-                          {note?.location || entry.place}
+                          {note && !note.hidden ? note.location || entry.place : entry.place}
                         </div>
                       );
                     })}

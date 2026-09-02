@@ -1,6 +1,21 @@
 import { getBlocksForMonth } from "./calendar";
-import { parseDateKey, type ActivityNote } from "./activity-notes";
+import { findNote, parseDateKey, toDateKey, type ActivityNote } from "./activity-notes";
 import type { ScheduleBlock } from "./types";
+
+function applyNoteToBlock(block: ScheduleBlock, note?: ActivityNote): ScheduleBlock {
+  if (!note || note.hidden) return block;
+  const place = note.location || block.place;
+  const event =
+    note.event ||
+    (block.team === "special" ? note.location || block.event : block.event);
+  return {
+    ...block,
+    place,
+    event,
+    activity: note.activity || block.activity,
+    remarks: note.remarks || block.remarks,
+  };
+}
 
 export function getVisibleBlocks(
   year: number,
@@ -8,10 +23,55 @@ export function getVisibleBlocks(
   notes: ActivityNote[] = [],
 ): ScheduleBlock[] {
   const base = getBlocksForMonth(year, monthIndex);
+  const result: ScheduleBlock[] = [];
+
+  for (const block of base) {
+    let current: ScheduleBlock | null = null;
+
+    const flush = () => {
+      if (current) result.push(current);
+      current = null;
+    };
+
+    for (let day = block.start; day <= block.end; day++) {
+      const note = findNote(notes, toDateKey(year, monthIndex, day), block.team);
+      if (note?.hidden) {
+        flush();
+        continue;
+      }
+
+      const next = applyNoteToBlock(
+        { ...block, start: day, end: day },
+        note,
+      );
+
+      if (note) {
+        flush();
+        result.push(next);
+        continue;
+      }
+
+      if (
+        current &&
+        current.end === day - 1 &&
+        current.place === next.place &&
+        current.event === next.event
+      ) {
+        current = { ...current, end: day };
+      } else {
+        flush();
+        current = next;
+      }
+    }
+
+    flush();
+  }
+
   const extras: ScheduleBlock[] = [];
   const seen = new Set<string>();
 
   for (const note of notes) {
+    if (note.hidden) continue;
     const parsed = parseDateKey(note.date);
     if (!parsed || parsed.year !== year || parsed.monthIndex !== monthIndex) continue;
 
@@ -29,13 +89,13 @@ export function getVisibleBlocks(
       start: parsed.day,
       end: parsed.day,
       place: note.location || undefined,
-      event: note.team === "special" ? note.location || note.activity || "Special Event" : undefined,
+      event: note.event || (note.team === "special" ? note.location || note.activity || "Special Event" : undefined),
       activity: note.activity || undefined,
       remarks: note.remarks || undefined,
     });
   }
 
-  return [...base, ...extras].sort((a, b) => a.start - b.start || a.team.localeCompare(b.team));
+  return [...result, ...extras].sort((a, b) => a.start - b.start || a.team.localeCompare(b.team));
 }
 
 export function buildVisibleDayMap(

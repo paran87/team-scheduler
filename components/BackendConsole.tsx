@@ -4,11 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { BrandLogo } from "./BrandLogo";
 import { notifyActivityNotesChanged } from "./ActivityNotesProvider";
-import { buildVisibleDayMap, getVisibleBlocks } from "@/lib/schedule-merge";
+import { getBlocksForMonth } from "@/lib/calendar";
 import {
   findNote,
+  isPrintedAssignment,
+  noteId,
   parseDateKey,
-  scheduledLocation,
+  scheduledBlock,
   TEAM_OPTIONS,
   teamLabel,
   toDateKey,
@@ -21,16 +23,20 @@ type FormState = {
   date: string;
   team: BlockTeam;
   location: string;
+  event: string;
   activity: string;
   remarks: string;
+  applyRange: boolean;
 };
 
 const DEFAULT_FORM: FormState = {
   date: "2026-09-02",
   team: "usec",
   location: "Lingayen, San Jacinto",
+  event: "",
   activity: "",
   remarks: "",
+  applyRange: false,
 };
 
 export function BackendConsole() {
@@ -60,35 +66,41 @@ export function BackendConsole() {
 
   function applyDateTeam(date: string, team: BlockTeam) {
     const existing = findNote(notes, date, team);
+    const printed = scheduledBlock(date, team);
     setForm({
       date,
       team,
-      location: existing?.location || scheduledLocation(date, team),
+      location: existing?.location || printed?.place || printed?.event || "",
+      event: existing?.event || printed?.event || "",
       activity: existing?.activity ?? "",
       remarks: existing?.remarks ?? "",
+      applyRange: false,
     });
+    setStatus("");
+    setConfirmId(null);
   }
 
   const parsed = parseDateKey(form.date);
-  const scheduledForDate = parsed
-    ? (buildVisibleDayMap(parsed.year, parsed.monthIndex, notes)[parsed.day] ?? [])
-    : [];
-  const teamIsScheduled = scheduledForDate.some((entry) => entry.team === form.team);
+  const printed = scheduledBlock(form.date, form.team);
+  const selectedNote = findNote(notes, form.date, form.team);
+  const rangeDays = printed && printed.start !== printed.end ? printed.end - printed.start + 1 : 1;
+  const teamIsScheduled = Boolean(printed) && !selectedNote?.hidden;
 
   const monitorRows = useMemo(() => {
     const { year, month } = monitorMonth;
-    const blocks = getVisibleBlocks(year, month, notes);
     const rows: Array<{
       date: string;
       team: BlockTeam;
       place: string;
-      onCalendar: boolean;
+      event: string;
       activity: string;
       remarks: string;
+      hidden: boolean;
+      printed: boolean;
     }> = [];
     const seen = new Set<string>();
 
-    for (const block of blocks) {
+    for (const block of getBlocksForMonth(year, month)) {
       for (let day = block.start; day <= block.end; day++) {
         const date = toDateKey(year, month, day);
         const key = `${date}__${block.team}`;
@@ -99,9 +111,11 @@ export function BackendConsole() {
           date,
           team: block.team,
           place: note?.location || block.place || block.event || "—",
-          onCalendar: true,
+          event: note?.event || block.event || "",
           activity: note?.activity ?? "",
           remarks: note?.remarks ?? "",
+          hidden: Boolean(note?.hidden),
+          printed: true,
         });
       }
     }
@@ -109,47 +123,80 @@ export function BackendConsole() {
     for (const note of notes) {
       const key = `${note.date}__${note.team}`;
       if (seen.has(key)) continue;
+      seen.add(key);
       rows.push({
         date: note.date,
         team: note.team,
-        place: note.location || "Not on public calendar",
-        onCalendar: false,
+        place: note.location || "—",
+        event: note.event || "",
         activity: note.activity,
         remarks: note.remarks,
+        hidden: Boolean(note.hidden),
+        printed: false,
       });
     }
 
     return rows.sort((a, b) => (a.date === b.date ? a.team.localeCompare(b.team) : a.date.localeCompare(b.date)));
   }, [monitorMonth, notes]);
 
-  const filledCount = monitorRows.filter((row) => row.activity || row.remarks).length;
+  const editedCount = monitorRows.filter((row) => findNote(notes, row.date, row.team) && !row.hidden).length;
+  const visibleCount = monitorRows.filter((row) => !row.hidden).length;
+
+  async function saveEntry(payload: {
+    date: string;
+    team: BlockTeam;
+    location: string;
+    activity: string;
+    remarks: string;
+    event: string;
+    hidden?: boolean;
+  }) {
+    const response = await fetch("/api/activity-notes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = (await response.json()) as { error?: string };
+    if (!response.ok) {
+      throw new Error(data.error || "Could not save this entry.");
+    }
+  }
+
+  function datesToSave() {
+    if (!form.applyRange || !printed || !parsed) return [form.date];
+    const dates: string[] = [];
+    for (let day = printed.start; day <= printed.end; day++) {
+      dates.push(toDateKey(parsed.year, parsed.monthIndex, day));
+    }
+    return dates;
+  }
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     setSaving(true);
     setStatus("");
     try {
-      const response = await fetch("/api/activity-notes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const data = (await response.json()) as { error?: string };
-      if (!response.ok) {
-        setStatus(data.error || "Could not save this entry.");
-        return;
+      const eventValue = form.team === "special" ? form.event || form.location : form.event;
+      for (const date of datesToSave()) {
+        await saveEntry({
+          date,
+          team: form.team,
+          location: form.location,
+          activity: form.activity,
+          remarks: form.remarks,
+          event: eventValue,
+          hidden: false,
+        });
       }
       notifyActivityNotesChanged();
       await refresh();
       setStatus("Saved. The public calendar, Activity tab, and map will update now.");
-    } catch {
-      setStatus("Could not reach the server.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Could not reach the server.");
     } finally {
       setSaving(false);
     }
   }
-
-  const selectedNote = findNote(notes, form.date, form.team);
 
   function requestDelete(id: string) {
     setConfirmId(id);
@@ -173,21 +220,39 @@ export function BackendConsole() {
       setNotes(data.notes ?? []);
       notifyActivityNotesChanged();
       setConfirmId(null);
-      const parsedId = id.split("__");
-      if (parsedId[0] === form.date && parsedId[1] === form.team) {
-        setForm({
-          date: form.date,
-          team: form.team,
-          location: scheduledLocation(form.date, form.team),
-          activity: "",
-          remarks: "",
-        });
-      }
-      setStatus("Removed. The public calendar, Activity tab, and map will update now.");
+      const parts = id.split("__");
+      setStatus(
+        isPrintedAssignment(parts[0] ?? "", (parts[1] as BlockTeam) ?? "usec")
+          ? "Hidden from the public dashboard. Save again to restore it."
+          : "Removed. The public calendar, Activity tab, and map will update now.",
+      );
     } catch {
       setStatus("Could not reach the server.");
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  async function onRestore(row: { date: string; team: BlockTeam; place: string; event: string; activity: string; remarks: string }) {
+    setSaving(true);
+    setStatus("");
+    try {
+      await saveEntry({
+        date: row.date,
+        team: row.team,
+        location: row.place === "—" ? "" : row.place,
+        activity: row.activity,
+        remarks: row.remarks,
+        event: row.event,
+        hidden: false,
+      });
+      notifyActivityNotesChanged();
+      await refresh();
+      setStatus("Restored to the public dashboard.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Could not reach the server.");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -236,7 +301,7 @@ export function BackendConsole() {
             <BrandLogo />
             <div>
               <p className="brand-title">Admin Console</p>
-              <p className="brand-sub">Log activity and monitor the public Team Schedule Dashboard</p>
+              <p className="brand-sub">Edit the September schedule and update the public dashboard</p>
             </div>
           </div>
           <Link href="/" className="backend-dash-link">
@@ -248,27 +313,27 @@ export function BackendConsole() {
       <main className="backend-main">
         <section className="backend-stats">
           <article className="backend-stat">
-            <span>Logged entries</span>
-            <strong>{notes.length}</strong>
+            <span>September assignments</span>
+            <strong>{monitorRows.filter((row) => row.date.startsWith("2026-09")).length}</strong>
           </article>
           <article className="backend-stat">
-            <span>On frontend this month</span>
+            <span>Visible on dashboard</span>
             <strong>
-              {filledCount}/{monitorRows.filter((row) => row.onCalendar).length}
+              {visibleCount}/{monitorRows.length}
             </strong>
           </article>
           <article className="backend-stat">
-            <span>Selected date</span>
-            <strong>{scheduledForDate.length} team{scheduledForDate.length === 1 ? "" : "s"}</strong>
+            <span>Edited from admin</span>
+            <strong>{editedCount}</strong>
           </article>
         </section>
 
         <div className="backend-grid">
-          <form className="backend-card backend-form" onSubmit={onSubmit}>
-            <h2>Activity form</h2>
+          <form id="backend-form" className="backend-card backend-form" onSubmit={onSubmit}>
+            <h2>Edit assignment</h2>
             <p>
-              New dates, teams, locations, and remarks appear immediately on the public calendar,
-              Activity tab, and Show Map.
+              Every September date, team, location, event, activity, and remarks can be changed here.
+              Click a row in the September table to load it.
             </p>
 
             <label className="backend-field">
@@ -295,10 +360,16 @@ export function BackendConsole() {
               </select>
             </label>
 
-            <div className={`backend-hint${teamIsScheduled ? "" : " warn"}`}>
-              {teamIsScheduled
-                ? `On the public dashboard, ${teamLabel(form.team)} is already scheduled this date. Saving will update that activity.`
-                : `${teamLabel(form.team)} is not on the calendar yet. Saving will create a new activity, timeline card, and map label.`}
+            <div className={`backend-hint${teamIsScheduled || selectedNote?.hidden ? "" : " warn"}`}>
+              {selectedNote?.hidden
+                ? `${teamLabel(form.team)} is hidden on this date. Saving will put it back on the public dashboard.`
+                : printed
+                  ? `You are editing the September schedule for ${teamLabel(form.team)}${
+                      printed.start === printed.end
+                        ? ""
+                        : ` (${MONTH_NAMES[monitorMonth.month].slice(0, 3)} ${printed.start}–${printed.end})`
+                    }. Saving updates the public calendar, Activity tab, and map.`
+                  : `${teamLabel(form.team)} is not on this date yet. Saving will create a new activity, timeline card, and map label.`}
             </div>
 
             <label className="backend-field">
@@ -308,6 +379,16 @@ export function BackendConsole() {
                 placeholder="City, municipality, or site"
                 value={form.location}
                 onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))}
+              />
+            </label>
+
+            <label className="backend-field">
+              Event / title
+              <input
+                type="text"
+                placeholder={form.team === "special" ? "Special event name" : "Optional event line, e.g. With Asec Jojo"}
+                value={form.event}
+                onChange={(event) => setForm((current) => ({ ...current, event: event.target.value }))}
               />
             </label>
 
@@ -331,20 +412,37 @@ export function BackendConsole() {
               />
             </label>
 
+            {rangeDays > 1 && printed ? (
+              <label className="backend-check">
+                <input
+                  type="checkbox"
+                  checked={form.applyRange}
+                  onChange={(event) => setForm((current) => ({ ...current, applyRange: event.target.checked }))}
+                />
+                Also update the other {rangeDays - 1} day{rangeDays - 1 === 1 ? "" : "s"} in this assignment (
+                {MONTH_NAMES[monitorMonth.month].slice(0, 3)} {printed.start}–{printed.end})
+              </label>
+            ) : null}
+
             <div className="backend-actions">
               <button className="backend-submit" type="submit" disabled={saving || Boolean(deletingId)}>
-                {saving ? "Saving…" : "Save to dashboard"}
+                {saving ? "Saving…" : selectedNote?.hidden ? "Restore to dashboard" : "Save to dashboard"}
               </button>
-              {selectedNote ? <DeleteButton id={selectedNote.id} label="Remove from dashboard" /> : null}
+              {printed || selectedNote ? (
+                <DeleteButton
+                  id={noteId(form.date, form.team)}
+                  label={printed ? "Hide from dashboard" : "Remove from dashboard"}
+                />
+              ) : null}
             </div>
             {status ? <p className="backend-status">{status}</p> : null}
           </form>
 
           <section className="backend-card">
-            <h2>Frontend monitor</h2>
+            <h2>September schedule</h2>
             <p>
-              Live view of {MONTH_NAMES[monitorMonth.month]} {monitorMonth.year} as shown on the public
-              dashboard, with activity and remarks from this console.
+              All printed {MONTH_NAMES[monitorMonth.month]} {monitorMonth.year} assignments are editable.
+              Click a row to load it into the form.
             </p>
             <div className="backend-table-wrap">
               <table className="backend-table">
@@ -359,12 +457,11 @@ export function BackendConsole() {
                   </tr>
                 </thead>
                 <tbody>
-                  {monitorRows.map((row) => {
-                    const saved = findNote(notes, row.date, row.team);
-                    return (
+                  {monitorRows.map((row) => (
                     <tr
                       key={`${row.date}-${row.team}`}
-                      className={row.date === form.date && row.team === form.team ? "is-selected" : ""}
+                      className={`${row.date === form.date && row.team === form.team ? "is-selected" : ""} is-editable${row.hidden ? " is-hidden" : ""}`}
+                      onClick={() => applyDateTeam(row.date, row.team)}
                     >
                       <td>{row.date}</td>
                       <td>
@@ -378,19 +475,39 @@ export function BackendConsole() {
                           {teamLabel(row.team)}
                         </span>
                       </td>
-                      <td className={row.onCalendar ? "" : "is-muted"}>{row.place}</td>
+                      <td className={row.hidden ? "is-muted" : ""}>
+                        {row.place}
+                        {row.event && row.event !== row.place ? ` · ${row.event}` : ""}
+                        {row.hidden ? " (hidden)" : ""}
+                      </td>
                       <td>{row.activity || "—"}</td>
                       <td>{row.remarks || "—"}</td>
-                      <td>
-                        {saved ? (
-                          <DeleteButton id={saved.id} label="Remove" />
+                      <td onClick={(event) => event.stopPropagation()}>
+                        <button
+                          type="button"
+                          className="backend-edit"
+                          onClick={() => {
+                            applyDateTeam(row.date, row.team);
+                            document.getElementById("backend-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                          }}
+                        >
+                          Edit
+                        </button>
+                        {row.hidden ? (
+                          <button
+                            type="button"
+                            className="backend-restore"
+                            disabled={saving}
+                            onClick={() => void onRestore(row)}
+                          >
+                            Restore
+                          </button>
                         ) : (
-                          <span className="is-muted">Printed schedule</span>
+                          <DeleteButton id={noteId(row.date, row.team)} label="Remove" />
                         )}
                       </td>
                     </tr>
-                    );
-                  })}
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -398,7 +515,7 @@ export function BackendConsole() {
         </div>
 
         <section className="backend-card">
-          <h2>Saved logs</h2>
+          <h2>Saved changes</h2>
           {notes.length ? (
             <ul className="backend-log-list">
               {notes.map((note) => (
@@ -406,17 +523,39 @@ export function BackendConsole() {
                   <div>
                     <strong>
                       {note.date} · {teamLabel(note.team)}
+                      {note.hidden ? " · hidden" : ""}
                     </strong>
                     <p>location: {note.location || "—"}</p>
+                    {note.event ? <p>event: {note.event}</p> : null}
                     <p>activity: {note.activity || "—"}</p>
                     <p>remarks: {note.remarks || "—"}</p>
                   </div>
-                  <DeleteButton id={note.id} label="Remove" />
+                  {note.hidden ? (
+                    <button
+                      type="button"
+                      className="backend-restore"
+                      disabled={saving}
+                      onClick={() =>
+                        void onRestore({
+                          date: note.date,
+                          team: note.team,
+                          place: note.location,
+                          event: note.event || "",
+                          activity: note.activity,
+                          remarks: note.remarks,
+                        })
+                      }
+                    >
+                      Restore
+                    </button>
+                  ) : (
+                    <DeleteButton id={note.id} label="Remove" />
+                  )}
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="backend-empty">No activity or remarks have been logged yet.</p>
+            <p className="backend-empty">No September edits have been saved yet. Click a row above to start.</p>
           )}
         </section>
       </main>
