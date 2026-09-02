@@ -1,10 +1,13 @@
 "use client";
 
 import { DAY_NAMES, MONTH_NAMES, TEAM_META } from "@/lib/schedule-data";
-import { buildPerDayMap } from "@/lib/calendar";
+import { buildVisibleDayMap } from "@/lib/schedule-merge";
 import { getPlaceImage } from "@/lib/place-images";
 import { TeamAvatar } from "./TeamAvatar";
 import { TeamLink } from "./TeamLink";
+import { ActivityFields } from "./ActivityFields";
+import { useActivityNotes } from "./ActivityNotesProvider";
+import { findNote, toDateKey } from "@/lib/activity-notes";
 
 type DetailPanelProps = {
   viewYear: number;
@@ -21,6 +24,8 @@ export function DetailPanel({
   open,
   onClose,
 }: DetailPanelProps) {
+  const { notes } = useActivityNotes();
+
   if (!selectedDay) {
     return (
       <aside className={`detail-panel${open ? " open" : ""}`}>
@@ -33,10 +38,12 @@ export function DetailPanel({
     );
   }
 
-  const perDay = buildPerDayMap(viewYear, viewMonth);
+  const perDay = buildVisibleDayMap(viewYear, viewMonth, notes);
   const entries = perDay[selectedDay] ?? [];
   const dow = new Date(viewYear, viewMonth, selectedDay).getDay();
   const special = entries.find((e) => e.team === "special");
+  const dateKey = toDateKey(viewYear, viewMonth, selectedDay);
+  const specialNote = special ? findNote(notes, dateKey, "special") : undefined;
 
   return (
     <aside className={`detail-panel${open ? " open" : ""}`}>
@@ -60,12 +67,20 @@ export function DetailPanel({
           <div className="star">★</div>
           <div className="tag">Special Event</div>
           <div className="name">{special.event}</div>
+          <ActivityFields
+            location={specialNote?.location || special.event}
+            activity={specialNote?.activity}
+            remarks={specialNote?.remarks}
+            variant="onDark"
+          />
         </div>
       ) : entries.length ? (
         entries.map((entry, index) => {
           if (entry.team === "special") return null;
           const meta = TEAM_META[entry.team];
-          const placeImage = getPlaceImage(entry.place);
+          const note = findNote(notes, dateKey, entry.team);
+          const location = note?.location || entry.place;
+          const placeImage = getPlaceImage(location);
           const rangeText =
             entry.start !== entry.end
               ? `${MONTH_NAMES[viewMonth].slice(0, 3)} ${entry.start} – ${entry.end}`
@@ -90,7 +105,7 @@ export function DetailPanel({
                   <div className="pin" style={{ textAlign: "center" }}>
                     📍
                   </div>
-                  <div className="loc-text">{entry.place}</div>
+                  <div className="loc-text">{location}</div>
                 </div>
               </div>
               <div className="team-body">
@@ -98,8 +113,9 @@ export function DetailPanel({
                   <span className={`team-chip ${meta.chipSolid}`}>{meta.label}</span>
                   <TeamAvatar teamKey={entry.team} size={40} />
                 </TeamLink>
-                <p className="team-place">{entry.place}</p>
+                <p className="team-place">{location}</p>
                 {entry.event ? <p className="team-event">{entry.event}</p> : null}
+                <ActivityFields location={location} activity={note?.activity} remarks={note?.remarks} />
                 {rangeText ? <p className="team-range">Duration: {rangeText}</p> : null}
               </div>
             </div>

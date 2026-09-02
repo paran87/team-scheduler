@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { MONTH_NAMES } from "@/lib/schedule-data";
 import type { TabName } from "@/lib/types";
 import { BrandLogo } from "./BrandLogo";
@@ -8,6 +9,7 @@ const TABS: { id: TabName; icon: string; label: string }[] = [
   { id: "calendar", icon: "📅", label: "Calendar" },
   { id: "activity", icon: "📋", label: "Activity" },
   { id: "assignment", icon: "🗺️", label: "Team Assignment" },
+  { id: "map", icon: "📍", label: "Show Map" },
 ];
 
 type TopBarProps = {
@@ -41,7 +43,7 @@ export function TopBar({
         </div>
         <div
           className="nav-controls"
-          style={{ display: activeTab === "calendar" ? "flex" : "none" }}
+          style={{ display: activeTab === "calendar" || activeTab === "map" ? "flex" : "none" }}
         >
           <button className="icon-btn" title="Previous month" onClick={onPrevMonth}>
             ←
@@ -56,6 +58,9 @@ export function TopBar({
             Today
           </button>
         </div>
+        <Link href="/backend" className="backend-nav-link">
+          Admin
+        </Link>
       </div>
 
       <nav className="tab-nav">

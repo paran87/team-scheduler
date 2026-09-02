@@ -9,6 +9,10 @@ export function getBlocksForMonth(year: number, monthIndex: number) {
   return scheduleBlocks[`${year}-${monthIndex + 1}`] ?? [];
 }
 
+export function activityId(block: ScheduleBlock) {
+  return `${block.team}-${block.start}-${block.end}-${block.place || block.event || "na"}`;
+}
+
 export function buildPerDayMap(year: number, monthIndex: number) {
   const blocks = getBlocksForMonth(year, monthIndex);
   const map: Record<number, ScheduleBlock[]> = {};

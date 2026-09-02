@@ -9,7 +9,9 @@ import { CalendarGrid } from "./CalendarGrid";
 import { DetailPanel } from "./DetailPanel";
 import { ActivityTimeline } from "./ActivityTimeline";
 import { TeamAssignmentPanel } from "./TeamAssignmentPanel";
+import { ShowMapPanel } from "./ShowMapPanel";
 import { Footer } from "./Footer";
+import { ActivityNotesProvider } from "./ActivityNotesProvider";
 
 export function Dashboard() {
   const [viewYear, setViewYear] = useState(2026);
@@ -55,7 +57,7 @@ export function Dashboard() {
   }
 
   return (
-    <>
+    <ActivityNotesProvider>
       <TopBar
         viewYear={viewYear}
         viewMonth={viewMonth}
@@ -99,6 +101,12 @@ export function Dashboard() {
           <section className={`tab-panel${activeTab === "assignment" ? " active" : ""}`}>
             <TeamAssignmentPanel focusTeam={assignmentFocus} />
           </section>
+
+          <section className={`tab-panel${activeTab === "map" ? " active" : ""}`}>
+            {activeTab === "map" ? (
+              <ShowMapPanel viewYear={viewYear} viewMonth={viewMonth} />
+            ) : null}
+          </section>
         </div>
       </main>
 
@@ -109,6 +117,6 @@ export function Dashboard() {
         onClick={closePanel}
         role="presentation"
       />
-    </>
+    </ActivityNotesProvider>
   );
 }

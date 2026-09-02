@@ -36,6 +36,12 @@ export function Footer({ onTabChange }: FooterProps) {
             <button className="footer-link" onClick={() => goToTab("assignment")}>
               Team Assignment
             </button>
+            <button className="footer-link" onClick={() => goToTab("map")}>
+              Show Map
+            </button>
+            <Link className="footer-link" href="/backend">
+              Admin
+            </Link>
           </div>
           <div className="footer-col">
             <h5>Teams</h5>

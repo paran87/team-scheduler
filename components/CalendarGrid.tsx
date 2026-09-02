@@ -1,7 +1,10 @@
 "use client";
 
 import { TEAM_META } from "@/lib/schedule-data";
-import { buildPerDayMap, daysInMonth, dotColor, isToday } from "@/lib/calendar";
+import { daysInMonth, dotColor, isToday } from "@/lib/calendar";
+import { buildVisibleDayMap } from "@/lib/schedule-merge";
+import { findNote, toDateKey, type ActivityNote } from "@/lib/activity-notes";
+import { useActivityNotes } from "./ActivityNotesProvider";
 import type { ScheduleBlock } from "@/lib/types";
 
 type CalendarGridProps = {
@@ -27,12 +30,13 @@ function getCells(
   viewYear: number,
   viewMonth: number,
   selectedDay: number | null,
+  notes: ActivityNote[],
 ): Array<BlankCell | DayCell> {
   const total = daysInMonth(viewYear, viewMonth);
   const firstDow = new Date(viewYear, viewMonth, 1).getDay();
   const lastDow = new Date(viewYear, viewMonth, total).getDay();
   const trailing = 6 - lastDow;
-  const perDay = buildPerDayMap(viewYear, viewMonth);
+  const perDay = buildVisibleDayMap(viewYear, viewMonth, notes);
   const cells: Array<BlankCell | DayCell> = [];
 
   for (let i = firstDow; i > 0; i--) {
@@ -69,7 +73,8 @@ export function CalendarGrid({
   selectedDay,
   onSelectDay,
 }: CalendarGridProps) {
-  const cells = getCells(viewYear, viewMonth, selectedDay);
+  const { notes } = useActivityNotes();
+  const cells = getCells(viewYear, viewMonth, selectedDay, notes);
 
   return (
     <div className="calendar-wrap">
@@ -121,10 +126,11 @@ export function CalendarGrid({
                     {visible.map((entry, index) => {
                       if (entry.team === "special") return null;
                       const meta = TEAM_META[entry.team];
+                      const note = findNote(notes, toDateKey(viewYear, viewMonth, cell.day), entry.team);
                       return (
                         <div key={`${entry.team}-${index}`} className={`event-chip ${meta.chip}`}>
                           <span className="dot-sm" style={{ background: dotColor(entry.team) }} />
-                          {entry.place}
+                          {note?.location || entry.place}
                         </div>
                       );
                     })}
