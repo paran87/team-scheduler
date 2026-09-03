@@ -125,7 +125,7 @@ function DeleteActions({ id, label, confirmId, deletingId, onConfirm, onRequest,
 }
 
 export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClose }: AdminDetailPanelProps) {
-  const { notes, refresh } = useActivityNotes();
+  const { notes, refresh, replaceNotes } = useActivityNotes();
   const [selectedTeam, setSelectedTeam] = useState<BlockTeam>("usec");
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [status, setStatus] = useState("");
@@ -179,10 +179,17 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    const data = (await response.json().catch(() => ({}))) as { error?: string };
+    const data = (await response.json().catch(() => ({}))) as {
+      notes?: ActivityNote[];
+      error?: string;
+    };
     if (!response.ok) {
       throw new Error(data.error || "Could not save this entry.");
     }
+    if (data.notes) {
+      replaceNotes(data.notes);
+    }
+    return data.notes;
   }
 
   function datesToSave() {
@@ -201,8 +208,9 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
     setStatus("");
     try {
       const eventValue = selectedTeam === "special" ? form.event || form.location : form.event;
+      let latestNotes: ActivityNote[] | undefined;
       for (const date of datesToSave()) {
-        await saveEntry({
+        latestNotes = await saveEntry({
           date,
           team: selectedTeam,
           location: form.location,
@@ -212,8 +220,10 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
           hidden: false,
         });
       }
+      if (!latestNotes) {
+        await refresh();
+      }
       notifyActivityNotesChanged();
-      await refresh();
       setStatus("Saved. The public dashboard will update now.");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Could not reach the server.");
@@ -234,13 +244,17 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "delete", id }),
       });
-      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      const data = (await response.json().catch(() => ({}))) as { notes?: ActivityNote[]; error?: string };
       if (!response.ok) {
         setStatus(data.error || "Could not remove this entry.");
         return;
       }
+      if (data.notes) {
+        replaceNotes(data.notes);
+      } else {
+        await refresh();
+      }
       notifyActivityNotesChanged();
-      await refresh();
       setConfirmId(null);
       setStatus(
         existing

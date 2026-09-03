@@ -58,7 +58,8 @@ export async function POST(request: NextRequest) {
     }
 
     const note = await upsertActivityNote({ date, team, location, activity, remarks, event, hidden });
-    return Response.json({ note }, { headers: NO_STORE });
+    const notes = await readActivityNotes();
+    return Response.json({ note, notes }, { headers: NO_STORE });
   } catch (error) {
     return fail(error, "Could not save or remove this activity.");
   }

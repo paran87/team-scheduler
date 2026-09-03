@@ -20,6 +20,11 @@ export function isSupabaseConfigured() {
   return Boolean(url && publishableKey);
 }
 
+export function isSupabaseWriterConfigured() {
+  const { url, publishableKey, serviceRoleKey } = getSupabaseEnv();
+  return Boolean(url && publishableKey && serviceRoleKey);
+}
+
 function makeClient(url: string, key: string) {
   return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },

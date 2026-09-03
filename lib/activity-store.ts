@@ -12,7 +12,7 @@ import {
   type ActivityNote,
 } from "./activity-notes";
 import { resolveCoords } from "./geocode";
-import { getSupabase, getSupabaseWriter, isSupabaseConfigured } from "./supabase";
+import { getSupabase, getSupabaseWriter, isSupabaseConfigured, isSupabaseWriterConfigured } from "./supabase";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "activity-notes.json");
@@ -149,6 +149,20 @@ async function readSupabaseNotes(): Promise<ActivityNote[]> {
     .filter((note): note is ActivityNote => Boolean(note));
 }
 
+function assertPersistentStorageAvailable() {
+  if (isSupabaseWriterConfigured()) return;
+  if (isSupabaseConfigured()) {
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY is required for saving activities. Add it to .env.local and your hosting environment.",
+    );
+  }
+  if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
+    throw new Error(
+      "Supabase is not configured for production. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, and SUPABASE_SERVICE_ROLE_KEY.",
+    );
+  }
+}
+
 export async function readLocalActivityNotesFile(): Promise<ActivityNote[]> {
   return (await readFromPath(DATA_FILE)) ?? [];
 }
@@ -171,6 +185,11 @@ export async function migrateLocalActivityNotes() {
 export async function readActivityNotes(): Promise<ActivityNote[]> {
   if (isSupabaseConfigured()) {
     return readSupabaseNotes();
+  }
+  if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
+    throw new Error(
+      "Supabase is not configured for production reads. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.",
+    );
   }
   return readLocalNotes();
 }
@@ -243,10 +262,27 @@ export async function upsertActivityNote(input: {
   };
 
   if (isSupabaseConfigured()) {
-    const { error } = await getSupabaseWriter().from("activity_notes").upsert(noteToRow(next), { onConflict: "id" });
+    assertPersistentStorageAvailable();
+    const supabase = getSupabaseWriter();
+    const { error } = await supabase.from("activity_notes").upsert(noteToRow(next), { onConflict: "id" });
     if (error) throw new Error(`Supabase upsert failed: ${error.message}`);
-    return next;
+
+    const { data: verified, error: verifyError } = await getSupabase()
+      .from("activity_notes")
+      .select("id, date, team, location, activity, remarks, event, hidden, lat, lng, updated_at")
+      .eq("id", id)
+      .maybeSingle();
+    if (verifyError) {
+      throw new Error(`Supabase verify failed after save: ${verifyError.message}`);
+    }
+    const saved = verified ? rowToNote(verified as ActivityNoteRow) : null;
+    if (!saved) {
+      throw new Error("Save appeared to succeed but the activity could not be read back from Supabase.");
+    }
+    return saved;
   }
+
+  assertPersistentStorageAvailable();
 
   const index = notes.findIndex((note) => note.id === id);
   if (index >= 0) notes[index] = next;
@@ -257,10 +293,12 @@ export async function upsertActivityNote(input: {
 
 export async function deleteActivityNote(id: string) {
   if (isSupabaseConfigured()) {
+    assertPersistentStorageAvailable();
     const { error } = await getSupabaseWriter().from("activity_notes").delete().eq("id", id);
     if (error) throw new Error(`Supabase delete failed: ${error.message}`);
     return readSupabaseNotes();
   }
+  assertPersistentStorageAvailable();
   const notes = await readLocalNotes();
   const next = notes.filter((note) => note.id !== id);
   await writeLocalNotes(next);
