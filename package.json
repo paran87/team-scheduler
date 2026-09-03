@@ -3,12 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
-    "build": "next build --webpack",
-    "start": "next start",
-    "lint": "eslint"
+    "dev": "node --use-system-ca node_modules/next/dist/bin/next dev --webpack",
+    "build": "node --use-system-ca node_modules/next/dist/bin/next build --webpack",
+    "start": "node --use-system-ca node_modules/next/dist/bin/next start",
+    "lint": "eslint",
+    "migrate:activity-notes": "node --use-system-ca scripts/migrate-activity-notes.mjs",
+    "verify:supabase": "node --use-system-ca scripts/verify-supabase-integration.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.114.0",
     "next": "^16.3.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

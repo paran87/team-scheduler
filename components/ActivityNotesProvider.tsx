@@ -18,10 +18,14 @@ const ActivityNotesContext = createContext<ActivityNotesContextValue>({
 async function loadNotes() {
   try {
     const response = await fetch("/api/activity-notes", { cache: "no-store" });
-    if (!response.ok) return null;
-    const data = (await response.json()) as { notes?: ActivityNote[] };
+    const data = (await response.json().catch(() => ({}))) as { notes?: ActivityNote[]; error?: string };
+    if (!response.ok) {
+      console.error("activity-notes:", data.error || `HTTP ${response.status}`);
+      return null;
+    }
     return data.notes ?? [];
-  } catch {
+  } catch (error) {
+    console.error("activity-notes:", error);
     return null;
   }
 }

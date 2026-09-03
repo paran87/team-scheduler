@@ -3,7 +3,7 @@
 import { TeamAvatar } from "./TeamAvatar";
 import { TeamLink } from "./TeamLink";
 
-export function Legend() {
+export function Legend({ hint = "Click any date for details" }: { hint?: string }) {
   return (
     <div className="legend">
       <TeamLink team="usec" className="legend-item team-nav-link">
@@ -22,7 +22,7 @@ export function Legend() {
         <span className="dot" style={{ background: "var(--special)" }} /> Special Event
       </div>
       <div className="legend-item">
-        <span className="dot" style={{ background: "#111", opacity: 0.3 }} /> Click any date for details
+        <span className="dot" style={{ background: "#111", opacity: 0.3 }} /> {hint}
       </div>
     </div>
   );

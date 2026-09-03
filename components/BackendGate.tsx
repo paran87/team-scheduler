@@ -6,18 +6,19 @@ import { BrandLogo } from "./BrandLogo";
 import { BackendConsole } from "./BackendConsole";
 
 const ADMIN_NAME = "kath";
-const ADMIN_PASSWORD = "1234";
+const ADMIN_PASSWORD = "soundproof";
 
 export function BackendGate() {
   const [admin, setAdmin] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [error, setError] = useState("");
 
   function onSubmit(event: React.FormEvent) {
     event.preventDefault();
-    const name = admin.trim() || ADMIN_NAME;
-    const pass = password || ADMIN_PASSWORD;
+    const name = admin.trim();
+    const pass = password;
     if (name === ADMIN_NAME && pass === ADMIN_PASSWORD) {
       setError("");
       setUnlocked(true);
@@ -54,8 +55,8 @@ export function BackendGate() {
             Admin
             <input
               type="text"
-              autoComplete="off"
-              placeholder={ADMIN_NAME}
+              autoComplete="username"
+              placeholder="Admin name"
               value={admin}
               onChange={(event) => setAdmin(event.target.value)}
             />
@@ -63,13 +64,24 @@ export function BackendGate() {
 
           <label className="backend-field">
             Password
-            <input
-              type="text"
-              autoComplete="off"
-              placeholder={ADMIN_PASSWORD}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
+            <span className="backend-password-wrap">
+              <input
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                placeholder="Enter password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+              <button
+                type="button"
+                className="backend-password-toggle"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword((current) => !current)}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </span>
           </label>
 
           {error ? <p className="backend-login-error">{error}</p> : null}

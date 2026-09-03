@@ -5,12 +5,14 @@ import {
   isBlockTeam,
   isPrintedAssignment,
   noteId,
+  parseDateKey,
   parseNoteId,
   scheduledEvent,
   scheduledLocation,
   type ActivityNote,
 } from "./activity-notes";
 import { resolveCoords } from "./geocode";
+import { getSupabase, getSupabaseWriter, isSupabaseConfigured } from "./supabase";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "activity-notes.json");
@@ -19,11 +21,30 @@ const TMP_FILE = path.join(tmpdir(), "team-scheduler-activity-notes.json");
 type NotesCache = { notes: ActivityNote[] | null };
 const globalForNotes = globalThis as typeof globalThis & { __teamSchedulerNotes?: NotesCache };
 
+export type ActivityNoteRow = {
+  id: string;
+  date: string;
+  team: string;
+  location: string;
+  activity: string;
+  remarks: string;
+  event: string | null;
+  hidden: boolean;
+  lat: number | null;
+  lng: number | null;
+  updated_at: string;
+};
+
 function cache(): NotesCache {
   if (!globalForNotes.__teamSchedulerNotes) {
     globalForNotes.__teamSchedulerNotes = { notes: null };
   }
   return globalForNotes.__teamSchedulerNotes;
+}
+
+export function toDateOnly(value: string) {
+  const match = /^(\d{4}-\d{2}-\d{2})/.exec(value.trim());
+  return match?.[1] ?? value.trim();
 }
 
 function normalizeNotes(parsed: unknown): ActivityNote[] {
@@ -32,11 +53,47 @@ function normalizeNotes(parsed: unknown): ActivityNote[] {
     if (!note || typeof note.id !== "string" || typeof note.date !== "string" || !isBlockTeam(note.team)) {
       return false;
     }
+    note.date = toDateOnly(note.date);
+    if (!parseDateKey(note.date)) return false;
     if (typeof note.location !== "string") note.location = "";
     if (typeof note.event !== "string") delete note.event;
     if (note.hidden !== true) delete note.hidden;
     return typeof note.activity === "string" && typeof note.remarks === "string";
   });
+}
+
+export function rowToNote(row: ActivityNoteRow): ActivityNote | null {
+  if (!isBlockTeam(row.team)) return null;
+  const date = toDateOnly(row.date);
+  if (!parseDateKey(date)) return null;
+  return {
+    id: row.id,
+    date,
+    team: row.team,
+    location: row.location ?? "",
+    activity: row.activity ?? "",
+    remarks: row.remarks ?? "",
+    updatedAt: row.updated_at,
+    ...(row.event ? { event: row.event } : {}),
+    ...(row.hidden ? { hidden: true } : {}),
+    ...(row.lat != null && row.lng != null ? { lat: row.lat, lng: row.lng } : {}),
+  };
+}
+
+export function noteToRow(note: ActivityNote): ActivityNoteRow {
+  return {
+    id: note.id,
+    date: toDateOnly(note.date),
+    team: note.team,
+    location: note.location,
+    activity: note.activity,
+    remarks: note.remarks,
+    event: note.event?.trim() ? note.event : null,
+    hidden: Boolean(note.hidden),
+    lat: note.lat ?? null,
+    lng: note.lng ?? null,
+    updated_at: note.updatedAt,
+  };
 }
 
 async function readFromPath(file: string): Promise<ActivityNote[] | null> {
@@ -53,13 +110,69 @@ async function writeToPath(file: string, payload: string) {
   await writeFile(file, payload, "utf8");
 }
 
-export async function readActivityNotes(): Promise<ActivityNote[]> {
+async function readLocalNotes(): Promise<ActivityNote[]> {
   const mem = cache();
   if (mem.notes) return mem.notes.map((note) => ({ ...note }));
-
   const loaded = (await readFromPath(DATA_FILE)) ?? (await readFromPath(TMP_FILE)) ?? [];
   mem.notes = loaded;
   return loaded.map((note) => ({ ...note }));
+}
+
+async function writeLocalNotes(notes: ActivityNote[]) {
+  const sorted = [...notes].sort((a, b) => {
+    if (a.date === b.date) return a.team.localeCompare(b.team);
+    return a.date < b.date ? -1 : 1;
+  });
+  cache().notes = sorted.map((note) => ({ ...note }));
+  const payload = `${JSON.stringify(sorted, null, 2)}\n`;
+  const writes = await Promise.allSettled([writeToPath(DATA_FILE, payload), writeToPath(TMP_FILE, payload)]);
+  const persisted = writes.some((result) => result.status === "fulfilled");
+  if (!persisted) {
+    console.warn("activity-notes: disk is read-only; keeping changes in memory for this server.");
+  }
+  return sorted;
+}
+
+async function readSupabaseNotes(): Promise<ActivityNote[]> {
+  const { data, error } = await getSupabase()
+    .from("activity_notes")
+    .select("id, date, team, location, activity, remarks, event, hidden, lat, lng, updated_at")
+    .order("date", { ascending: true })
+    .order("team", { ascending: true });
+
+  if (error) {
+    throw new Error(`Supabase read failed: ${error.message}`);
+  }
+
+  return (data ?? [])
+    .map((row) => rowToNote(row as ActivityNoteRow))
+    .filter((note): note is ActivityNote => Boolean(note));
+}
+
+export async function readLocalActivityNotesFile(): Promise<ActivityNote[]> {
+  return (await readFromPath(DATA_FILE)) ?? [];
+}
+
+export async function migrateLocalActivityNotes() {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase is not configured.");
+  }
+  const local = await readLocalActivityNotesFile();
+  if (!local.length) {
+    return { migrated: 0, notes: await readSupabaseNotes() };
+  }
+  const { error } = await getSupabaseWriter().from("activity_notes").upsert(local.map(noteToRow), { onConflict: "id" });
+  if (error) {
+    throw new Error(`Supabase migrate failed: ${error.message}`);
+  }
+  return { migrated: local.length, notes: await readSupabaseNotes() };
+}
+
+export async function readActivityNotes(): Promise<ActivityNote[]> {
+  if (isSupabaseConfigured()) {
+    return readSupabaseNotes();
+  }
+  return readLocalNotes();
 }
 
 export async function writeActivityNotes(notes: ActivityNote[]) {
@@ -67,15 +180,27 @@ export async function writeActivityNotes(notes: ActivityNote[]) {
     if (a.date === b.date) return a.team.localeCompare(b.team);
     return a.date < b.date ? -1 : 1;
   });
-  cache().notes = sorted.map((note) => ({ ...note }));
-  const payload = `${JSON.stringify(sorted, null, 2)}\n`;
 
-  const writes = await Promise.allSettled([writeToPath(DATA_FILE, payload), writeToPath(TMP_FILE, payload)]);
-  const persisted = writes.some((result) => result.status === "fulfilled");
-  if (!persisted) {
-    console.warn("activity-notes: disk is read-only; keeping changes in memory for this server.");
+  if (isSupabaseConfigured()) {
+    const supabase = getSupabaseWriter();
+    const { data: current, error: readError } = await supabase.from("activity_notes").select("id");
+    if (readError) throw new Error(`Supabase read failed: ${readError.message}`);
+
+    const keep = new Set(sorted.map((note) => note.id));
+    const stale = (current ?? []).map((row) => row.id as string).filter((id) => !keep.has(id));
+    if (stale.length) {
+      const { error: deleteError } = await supabase.from("activity_notes").delete().in("id", stale);
+      if (deleteError) throw new Error(`Supabase delete failed: ${deleteError.message}`);
+    }
+
+    if (sorted.length) {
+      const { error: upsertError } = await supabase.from("activity_notes").upsert(sorted.map(noteToRow), { onConflict: "id" });
+      if (upsertError) throw new Error(`Supabase upsert failed: ${upsertError.message}`);
+    }
+    return sorted;
   }
-  return sorted;
+
+  return writeLocalNotes(sorted);
 }
 
 export async function upsertActivityNote(input: {
@@ -87,8 +212,12 @@ export async function upsertActivityNote(input: {
   event?: string;
   hidden?: boolean;
 }) {
+  const date = toDateOnly(input.date);
+  if (!parseDateKey(date)) {
+    throw new Error("Enter a valid date.");
+  }
   const notes = await readActivityNotes();
-  const id = noteId(input.date, input.team);
+  const id = noteId(date, input.team);
   const location = input.location.trim();
   const event = (input.event ?? "").trim();
   const previous = notes.find((note) => note.id === id);
@@ -102,7 +231,7 @@ export async function upsertActivityNote(input: {
 
   const next: ActivityNote = {
     id,
-    date: input.date,
+    date,
     team: input.team,
     location,
     activity: input.activity.trim(),
@@ -112,17 +241,29 @@ export async function upsertActivityNote(input: {
     ...(input.hidden ? { hidden: true } : {}),
     ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
   };
+
+  if (isSupabaseConfigured()) {
+    const { error } = await getSupabaseWriter().from("activity_notes").upsert(noteToRow(next), { onConflict: "id" });
+    if (error) throw new Error(`Supabase upsert failed: ${error.message}`);
+    return next;
+  }
+
   const index = notes.findIndex((note) => note.id === id);
   if (index >= 0) notes[index] = next;
   else notes.push(next);
-  await writeActivityNotes(notes);
+  await writeLocalNotes(notes);
   return next;
 }
 
 export async function deleteActivityNote(id: string) {
-  const notes = await readActivityNotes();
+  if (isSupabaseConfigured()) {
+    const { error } = await getSupabaseWriter().from("activity_notes").delete().eq("id", id);
+    if (error) throw new Error(`Supabase delete failed: ${error.message}`);
+    return readSupabaseNotes();
+  }
+  const notes = await readLocalNotes();
   const next = notes.filter((note) => note.id !== id);
-  await writeActivityNotes(next);
+  await writeLocalNotes(next);
   return next;
 }
 
