@@ -68,9 +68,9 @@ export function DetailPanel({
           <div className="tag">Special Event</div>
           <div className="name">{special.event}</div>
           <ActivityFields
-            location={specialNote?.location || special.event}
-            activity={specialNote?.activity}
-            remarks={specialNote?.remarks}
+            location={special.place || specialNote?.location}
+            activity={special.activity ?? specialNote?.activity}
+            remarks={special.remarks ?? specialNote?.remarks}
             variant="onDark"
           />
         </div>
@@ -79,7 +79,7 @@ export function DetailPanel({
           if (entry.team === "special") return null;
           const meta = TEAM_META[entry.team];
           const note = findNote(notes, dateKey, entry.team);
-          const location = note?.location || entry.place;
+          const location = entry.place || note?.location;
           const placeImage = getPlaceImage(location);
           const rangeText =
             entry.start !== entry.end
@@ -114,8 +114,8 @@ export function DetailPanel({
                   <TeamAvatar teamKey={entry.team} size={40} />
                 </TeamLink>
                 <p className="team-place">{location}</p>
-                {entry.event ? <p className="team-event">{entry.event}</p> : null}
-                <ActivityFields location={location} activity={note?.activity} remarks={note?.remarks} />
+                {entry.event && entry.event !== location ? <p className="team-event">{entry.event}</p> : null}
+                <ActivityFields location={location} activity={entry.activity ?? note?.activity} remarks={entry.remarks ?? note?.remarks} />
                 {rangeText ? <p className="team-range">Duration: {rangeText}</p> : null}
               </div>
             </div>

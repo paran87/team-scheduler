@@ -2,19 +2,29 @@ import { getBlocksForMonth } from "./calendar";
 import { findNote, parseDateKey, toDateKey, type ActivityNote } from "./activity-notes";
 import type { ScheduleBlock } from "./types";
 
+function text(value?: string) {
+  const next = value?.trim() ?? "";
+  return next || undefined;
+}
+
 function applyNoteToBlock(block: ScheduleBlock, note?: ActivityNote): ScheduleBlock {
   if (!note || note.hidden) return block;
-  const place = note.location || block.place;
-  const event =
-    note.event ||
-    (block.team === "special" ? note.location || block.event : block.event);
   return {
     ...block,
-    place,
-    event,
-    activity: note.activity || block.activity,
-    remarks: note.remarks || block.remarks,
+    place: text(note.location),
+    event: text(note.event) || (block.team === "special" ? text(note.location) : undefined),
+    activity: text(note.activity),
+    remarks: text(note.remarks),
   };
+}
+
+function sameVisibleBlock(a: ScheduleBlock, b: ScheduleBlock) {
+  return (
+    a.place === b.place &&
+    a.event === b.event &&
+    a.activity === b.activity &&
+    a.remarks === b.remarks
+  );
 }
 
 export function getVisibleBlocks(
@@ -45,18 +55,7 @@ export function getVisibleBlocks(
         note,
       );
 
-      if (note) {
-        flush();
-        result.push(next);
-        continue;
-      }
-
-      if (
-        current &&
-        current.end === day - 1 &&
-        current.place === next.place &&
-        current.event === next.event
-      ) {
+      if (current && current.end === day - 1 && sameVisibleBlock(current, next)) {
         const ongoing: ScheduleBlock = current;
         current = { ...ongoing, end: day };
       } else {

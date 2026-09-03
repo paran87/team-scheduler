@@ -1,12 +1,55 @@
 [
   {
-    "id": "2026-10-07__usec",
-    "date": "2026-10-07",
-    "team": "usec",
-    "location": "Batangas",
-    "activity": "werewreww",
-    "remarks": "erwerew",
-    "updatedAt": "2026-09-02T06:14:57.039Z",
-    "event": "werwer"
+    "id": "2026-09-07__b",
+    "date": "2026-09-07",
+    "team": "b",
+    "location": "Zamboanga",
+    "activity": "",
+    "remarks": "",
+    "updatedAt": "2026-09-02T07:48:11.942Z",
+    "lat": 6.9214,
+    "lng": 122.079
+  },
+  {
+    "id": "2026-09-08__b",
+    "date": "2026-09-08",
+    "team": "b",
+    "location": "Zamboanga",
+    "activity": "",
+    "remarks": "",
+    "updatedAt": "2026-09-02T07:51:32.238Z",
+    "lat": 6.9214,
+    "lng": 122.079
+  },
+  {
+    "id": "2026-09-09__b",
+    "date": "2026-09-09",
+    "team": "b",
+    "location": "Zamboanga",
+    "activity": "",
+    "remarks": "",
+    "updatedAt": "2026-09-02T07:50:20.440Z",
+    "lat": 6.9214,
+    "lng": 122.079
+  },
+  {
+    "id": "2026-09-14__b",
+    "date": "2026-09-14",
+    "team": "b",
+    "location": "Zamboanga",
+    "activity": "",
+    "remarks": "",
+    "updatedAt": "2026-09-02T07:52:31.007Z",
+    "hidden": true
+  },
+  {
+    "id": "2026-09-15__b",
+    "date": "2026-09-15",
+    "team": "b",
+    "location": "Zamboanga",
+    "activity": "",
+    "remarks": "",
+    "updatedAt": "2026-09-02T07:52:23.486Z",
+    "hidden": true
   }
 ]

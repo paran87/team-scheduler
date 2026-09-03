@@ -3,7 +3,7 @@
 import { TEAM_META } from "@/lib/schedule-data";
 import { daysInMonth, dotColor, isToday } from "@/lib/calendar";
 import { buildVisibleDayMap } from "@/lib/schedule-merge";
-import { findNote, toDateKey, type ActivityNote } from "@/lib/activity-notes";
+import { type ActivityNote } from "@/lib/activity-notes";
 import { useActivityNotes } from "./ActivityNotesProvider";
 import type { ScheduleBlock } from "@/lib/types";
 
@@ -126,11 +126,10 @@ export function CalendarGrid({
                     {visible.map((entry, index) => {
                       if (entry.team === "special") return null;
                       const meta = TEAM_META[entry.team];
-                      const note = findNote(notes, toDateKey(viewYear, viewMonth, cell.day), entry.team);
                       return (
                         <div key={`${entry.team}-${index}`} className={`event-chip ${meta.chip}`}>
                           <span className="dot-sm" style={{ background: dotColor(entry.team) }} />
-                          {note && !note.hidden ? note.location || entry.place : entry.place}
+                          {entry.place || entry.event}
                         </div>
                       );
                     })}

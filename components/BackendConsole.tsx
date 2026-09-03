@@ -70,11 +70,11 @@ export function BackendConsole() {
     setForm({
       date,
       team,
-      location: existing?.location || printed?.place || printed?.event || "",
-      event: existing?.event || printed?.event || "",
+      location: existing ? existing.location : printed?.place || printed?.event || "",
+      event: existing ? existing.event ?? "" : printed?.event || "",
       activity: existing?.activity ?? "",
       remarks: existing?.remarks ?? "",
-      applyRange: false,
+      applyRange: Boolean(printed && printed.start !== printed.end),
     });
     setStatus("");
     setConfirmId(null);
@@ -110,10 +110,10 @@ export function BackendConsole() {
         rows.push({
           date,
           team: block.team,
-          place: note?.location || block.place || block.event || "—",
-          event: note?.event || block.event || "",
-          activity: note?.activity ?? "",
-          remarks: note?.remarks ?? "",
+          place: note ? note.location || "—" : block.place || block.event || "—",
+          event: note ? note.event || "" : block.event || "",
+          activity: note ? note.activity : "",
+          remarks: note ? note.remarks : "",
           hidden: Boolean(note?.hidden),
           printed: true,
         });
@@ -423,8 +423,8 @@ export function BackendConsole() {
                   checked={form.applyRange}
                   onChange={(event) => setForm((current) => ({ ...current, applyRange: event.target.checked }))}
                 />
-                Also update the other {rangeDays - 1} day{rangeDays - 1 === 1 ? "" : "s"} in this assignment (
-                {MONTH_NAMES[monitorMonth.month].slice(0, 3)} {printed.start}–{printed.end})
+                Replace the full assignment (
+                {MONTH_NAMES[monitorMonth.month].slice(0, 3)} {printed.start}–{printed.end}), not only this date
               </label>
             ) : null}
 

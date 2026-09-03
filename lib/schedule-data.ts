@@ -6,8 +6,51 @@ export const scheduleBlocks: Record<string, ScheduleBlock[]> = {
     { team: "b", start: 2, end: 2, place: "Lingayen, San Jacinto" },
     { team: "a", start: 2, end: 2, place: "Trece - Reloc" },
 
-    { team: "usec", start: 3, end: 4, place: "Bataan" },
+    { team: "usec", start: 3, end: 3, place: "Bataan" },
+    {
+      team: "usec",
+      start: 4,
+      end: 4,
+      activity: "Morning — Meeting with RSA\n1:30 PM — ManCom",
+    },
     { team: "b", start: 3, end: 5, place: "Pola, Mindoro" },
+    {
+      team: "a",
+      start: 4,
+      end: 4,
+      place: "DPWH RO, San Fernando, Pampanga",
+      activity:
+        "10:00 AM — Meeting with DPWH Tech Service, RO, and SMC re San Simon and Tulaoc River System at DPWH RO in San Fernando, Pampanga\n1:00 PM — Meeting with UPMO for BI Building (Dindo)",
+    },
+
+    {
+      team: "a",
+      start: 7,
+      end: 7,
+      place: "Central Office/Pasig City",
+      activity: "10:00 AM — Meeting with General Torre, DPWH, DENR re Dumpsite",
+    },
+    {
+      team: "a",
+      start: 7,
+      end: 7,
+      place: "Batangas",
+      activity: "2:30 PM — NBEX Meeting with SMC at Batangas Provincial Capitol",
+    },
+    {
+      team: "usec",
+      start: 7,
+      end: 7,
+      activity:
+        "1:00 PM — Deliberation (DEs and ADEs)\n4:00 PM — Interview (3rd batch of DEs and ADEs)",
+    },
+    {
+      team: "usec",
+      start: 7,
+      end: 7,
+      place: "Batangas",
+      activity: "2:30 PM — NBEX Meeting with SMC at Batangas Provincial Capitol",
+    },
 
     { team: "usec", start: 8, end: 9, place: "Benguet" },
 

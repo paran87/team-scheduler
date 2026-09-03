@@ -1,4 +1,4 @@
-import { findNote, notesForBlock, toDateKey, type ActivityNote } from "./activity-notes";
+import { findNote, toDateKey, type ActivityNote } from "./activity-notes";
 import { activityId } from "./calendar";
 import { getPlaceCoords } from "./place-coords";
 import { getVisibleBlocks } from "./schedule-merge";
@@ -47,8 +47,7 @@ export function getMapPins(year: number, monthIndex: number, notes: ActivityNote
 
   for (const block of getVisibleBlocks(year, monthIndex, notes)) {
     if (block.team === "special") continue;
-    const fields = notesForBlock(notes, year, monthIndex, block);
-    const place = fields.location || block.place;
+    const place = block.place;
     if (!place) continue;
     const coords = coordsForBlock(block, notes, year, monthIndex, place);
     if (!coords) continue;

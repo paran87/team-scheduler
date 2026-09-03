@@ -1,7 +1,11 @@
 export const PLACE_COORDS: Record<string, { lat: number; lng: number }> = {
   "Lingayen, San Jacinto": { lat: 16.0219, lng: 120.2319 },
   "Trece - Reloc": { lat: 14.2786, lng: 120.8669 },
+  "DPWH RO, San Fernando, Pampanga": { lat: 15.0294, lng: 120.6896 },
+  "Central Office/Pasig City": { lat: 14.5764, lng: 121.0851 },
   Bataan: { lat: 14.676, lng: 120.5361 },
+  "Batangas Provincial Capitol": { lat: 13.7565, lng: 121.0583 },
+  Batangas: { lat: 13.7565, lng: 121.0583 },
   "Pola, Mindoro": { lat: 13.1436, lng: 121.4419 },
   Benguet: { lat: 16.455, lng: 120.589 },
   Apayao: { lat: 18.0072, lng: 121.1842 },

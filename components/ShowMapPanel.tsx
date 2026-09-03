@@ -288,7 +288,7 @@ function MapActivityCard({
 }) {
   const { notes } = useActivityNotes();
   const fields = notesForBlock(notes, viewYear, viewMonth, pin);
-  const location = fields.location || pin.place;
+  const location = pin.place;
   const placeImage = getPlaceImage(location);
   const meta = TEAM_META[pin.team];
   const rangeLabel =

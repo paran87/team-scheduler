@@ -60,12 +60,12 @@ export function ActivityTimeline({ viewYear, viewMonth, focusId }: ActivityTimel
                 <div className="activity-left">
                   <div className="activity-date-badge">{rangeLabel}</div>
                   <div className="activity-info">
-                    <p className="place">★ {fields.event || block.event}</p>
+                    <p className="place">★ {block.event || fields.event}</p>
                     <p className="note">Special company-wide event</p>
                     <ActivityFields
-                      location={fields.location || block.event}
-                      activity={fields.activity}
-                      remarks={fields.remarks}
+                      location={block.place || fields.location}
+                      activity={block.activity ?? fields.activity}
+                      remarks={block.remarks ?? fields.remarks}
                       variant="onDark"
                     />
                   </div>
@@ -91,12 +91,12 @@ export function ActivityTimeline({ viewYear, viewMonth, focusId }: ActivityTimel
               <div className="activity-left">
                 <div className="activity-date-badge">{rangeLabel}</div>
                 <div className="activity-info">
-                  <p className="place">{fields.location || block.place}</p>
-                  {block.event ? <p className="note">{block.event}</p> : null}
+                  <p className="place">{block.place || fields.location}</p>
+                  {block.event && block.event !== block.place ? <p className="note">{block.event}</p> : null}
                   <ActivityFields
-                    location={fields.location || block.place}
-                    activity={fields.activity}
-                    remarks={fields.remarks}
+                    location={block.place || fields.location}
+                    activity={block.activity ?? fields.activity}
+                    remarks={block.remarks ?? fields.remarks}
                   />
                 </div>
               </div>
