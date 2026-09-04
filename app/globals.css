@@ -638,6 +638,11 @@ footer {
   padding: 36px 20px 64px;
 }
 .backend-login-card { width: 100%; max-width: 420px; margin: 0; }
+.backend-login-title {
+  margin: 0 0 18px;
+  text-align: center;
+  font-size: 22px;
+}
 .backend-login-error { margin: 0 0 12px; color: #b91c1c; font-weight: 700; font-size: 13px; }
 .backend-header {
   position: sticky; top: 0; z-index: 40;

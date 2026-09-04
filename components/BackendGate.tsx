@@ -48,7 +48,7 @@ export function BackendGate() {
 
       <main className="backend-login-main">
         <form className="backend-card backend-login-card" onSubmit={onSubmit}>
-          <h2>Admin sign in</h2>
+          <h2 className="backend-login-title">Sign in</h2>
 
           <label className="backend-field">
             Admin
