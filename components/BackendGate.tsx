@@ -49,7 +49,6 @@ export function BackendGate() {
       <main className="backend-login-main">
         <form className="backend-card backend-login-card" onSubmit={onSubmit}>
           <h2>Admin sign in</h2>
-          <p>Use the Admin name and Password to open the admin form.</p>
 
           <label className="backend-field">
             Admin
