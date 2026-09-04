@@ -140,6 +140,15 @@ button { font-family: inherit; }
   background: var(--card); border-radius: 24px; box-shadow: var(--shadow);
   border: 1px solid var(--border); overflow: hidden; padding: 22px;
 }
+.calendar-month-title {
+  margin: 0 0 16px;
+  text-align: center;
+  font-family: var(--font-sora), Sora, sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
 .weekday-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
 .weekday-row div {
   text-align: center; font-family: var(--font-sora), Sora, sans-serif; font-size: 12px; font-weight: 700;
@@ -461,6 +470,7 @@ footer {
 @media (min-width: 981px) { .drag-handle { display: none; } }
 @media (max-width: 720px) {
   .calendar-wrap { padding: 14px; border-radius: 18px; }
+  .calendar-month-title { margin: 0 0 12px; font-size: 18px; }
   .weekday-row { gap: 5px; margin-bottom: 8px; }
   .weekday-row div { font-size: 9.5px; padding: 2px 0; }
   .cal-grid { gap: 5px; }

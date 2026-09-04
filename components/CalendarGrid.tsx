@@ -1,6 +1,6 @@
 "use client";
 
-import { TEAM_META } from "@/lib/schedule-data";
+import { MONTH_NAMES, TEAM_META } from "@/lib/schedule-data";
 import { daysInMonth, dotColor, isToday } from "@/lib/calendar";
 import { buildVisibleDayMap } from "@/lib/schedule-merge";
 import { type ActivityNote } from "@/lib/activity-notes";
@@ -78,6 +78,9 @@ export function CalendarGrid({
 
   return (
     <div className="calendar-wrap">
+      <h2 className="calendar-month-title">
+        {MONTH_NAMES[viewMonth]} {viewYear}
+      </h2>
       <div className="weekday-row">
         <div>Sun</div>
         <div>Mon</div>
