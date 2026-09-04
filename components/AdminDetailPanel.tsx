@@ -129,6 +129,7 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
   const [selectedTeam, setSelectedTeam] = useState<BlockTeam>("usec");
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [status, setStatus] = useState("");
+  const [statusError, setStatusError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -152,6 +153,7 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
     setSelectedTeam(first);
     setForm(loadForm(key, first, notes));
     setStatus("");
+    setStatusError(false);
     setConfirmId(null);
     // Reset only when the selected calendar day/month changes, not on every notes poll.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -162,6 +164,7 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
     setSelectedTeam(team);
     setForm(loadForm(dateKey, team, notes));
     setStatus("");
+    setStatusError(false);
     setConfirmId(null);
   }
 
@@ -206,6 +209,7 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
     if (!dateKey) return;
     setSaving(true);
     setStatus("");
+    setStatusError(false);
     try {
       const eventValue = selectedTeam === "special" ? form.event || form.location : form.event;
       let latestNotes: ActivityNote[] | undefined;
@@ -224,8 +228,10 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
         await refresh();
       }
       notifyActivityNotesChanged();
+      setStatusError(false);
       setStatus("Saved. The public dashboard will update now.");
     } catch (error) {
+      setStatusError(true);
       setStatus(error instanceof Error ? error.message : "Could not reach the server.");
     } finally {
       setSaving(false);
@@ -238,6 +244,7 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
     const printedRow = isPrintedAssignment(parsed[0] ?? "", (parsed[1] as BlockTeam) ?? "usec");
     setDeletingId(id);
     setStatus("");
+    setStatusError(false);
     try {
       const response = await fetch("/api/activity-notes", {
         method: "POST",
@@ -246,6 +253,7 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
       });
       const data = (await response.json().catch(() => ({}))) as { notes?: ActivityNote[]; error?: string };
       if (!response.ok) {
+        setStatusError(true);
         setStatus(data.error || "Could not remove this entry.");
         return;
       }
@@ -256,6 +264,7 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
       }
       notifyActivityNotesChanged();
       setConfirmId(null);
+      setStatusError(false);
       setStatus(
         existing
           ? "Removed your added data."
@@ -264,6 +273,7 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
             : "Removed from the dashboard.",
       );
     } catch {
+      setStatusError(true);
       setStatus("Could not reach the server.");
     } finally {
       setDeletingId(null);
@@ -458,7 +468,7 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
                 />
               ) : null}
             </div>
-            {status ? <p className="admin-status">{status}</p> : null}
+            {status ? <p className={`admin-status${statusError ? " is-error" : ""}`}>{status}</p> : null}
           </div>
         </div>
       </form>

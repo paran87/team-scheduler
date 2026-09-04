@@ -12,7 +12,7 @@ import {
   type ActivityNote,
 } from "./activity-notes";
 import { resolveCoords } from "./geocode";
-import { getSupabase, getSupabaseWriter, isSupabaseConfigured, isSupabaseWriterConfigured } from "./supabase";
+import { getSupabase, getSupabaseWriter, isSupabaseConfigured, isSupabaseWriterConfigured, supabaseConfigHint } from "./supabase";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DATA_FILE = path.join(DATA_DIR, "activity-notes.json");
@@ -152,14 +152,10 @@ async function readSupabaseNotes(): Promise<ActivityNote[]> {
 function assertPersistentStorageAvailable() {
   if (isSupabaseWriterConfigured()) return;
   if (isSupabaseConfigured()) {
-    throw new Error(
-      "SUPABASE_SERVICE_ROLE_KEY is required for saving activities. Add it to .env.local and your hosting environment.",
-    );
+    throw new Error(`SUPABASE_SERVICE_ROLE_KEY is required for saving activities. ${supabaseConfigHint()}`);
   }
   if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
-    throw new Error(
-      "Supabase is not configured for production. Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, and SUPABASE_SERVICE_ROLE_KEY.",
-    );
+    throw new Error(`Supabase is not configured for production. ${supabaseConfigHint()}`);
   }
 }
 
@@ -187,9 +183,7 @@ export async function readActivityNotes(): Promise<ActivityNote[]> {
     return readSupabaseNotes();
   }
   if (process.env.NODE_ENV === "production" || process.env.VERCEL) {
-    throw new Error(
-      "Supabase is not configured for production reads. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.",
-    );
+    throw new Error(`Supabase is not configured for production reads. ${supabaseConfigHint()}`);
   }
   return readLocalNotes();
 }

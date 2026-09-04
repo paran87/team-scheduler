@@ -920,6 +920,9 @@ footer {
   font-weight: 700;
   color: #065f46;
 }
+.admin-status.is-error {
+  color: #b91c1c;
+}
 
 /* ===================== SHOW MAP TAB ===================== */
 .map-panel { min-width: 0; }
