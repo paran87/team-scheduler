@@ -6,7 +6,7 @@ import { BrandLogo } from "./BrandLogo";
 import { BackendConsole } from "./BackendConsole";
 
 const ADMIN_NAME = "kath";
-const ADMIN_PASSWORD = "soundproof";
+const ADMIN_PASSWORD = "cruz";
 
 export function BackendGate() {
   const [admin, setAdmin] = useState("");
