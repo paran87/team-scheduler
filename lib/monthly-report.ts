@@ -3,12 +3,13 @@ import { durationLabelForAssignment } from "./assignment-duration";
 import { membersForDate } from "./activity-composition";
 import { getVisibleBlocks } from "./schedule-merge";
 import { MONTH_NAMES } from "./schedule-data";
-import type { BlockTeam, ScheduleBlock } from "./types";
+import { isTeamKey } from "./team-roster";
+import type { ScheduleBlock, TeamKey } from "./types";
 
 export type ReportFilter = "all" | "posted" | "missing";
 
 export type TeamReportSummary = {
-  team: BlockTeam;
+  team: TeamKey;
   fieldDays: number;
   deployments: number;
   locations: number;
@@ -19,7 +20,7 @@ export type DeploymentReportRow = {
   key: string;
   start: number;
   end: number;
-  team: BlockTeam;
+  team: TeamKey;
   location: string;
   duration: string;
   activity: string;
@@ -29,7 +30,7 @@ export type DeploymentReportRow = {
 
 export type LocationReportRow = {
   location: string;
-  teams: BlockTeam[];
+  teams: TeamKey[];
   coverage: string;
 };
 
@@ -45,7 +46,11 @@ export type MonthlyReport = {
   locationList: LocationReportRow[];
 };
 
-const TEAM_ORDER: BlockTeam[] = ["usec", "b", "a"];
+const TEAM_ORDER: TeamKey[] = ["usec", "b", "a"];
+
+function isFieldBlock(block: ScheduleBlock): block is ScheduleBlock & { team: TeamKey } {
+  return isTeamKey(block.team);
+}
 
 function firstLine(value?: string) {
   const text = (value ?? "").trim();
@@ -90,7 +95,7 @@ function formatDayRanges(days: number[], monthIndex: number) {
 
 export function buildMonthlyReport(year: number, monthIndex: number, notes: ActivityNote[]): MonthlyReport {
   const blocks = getVisibleBlocks(year, monthIndex, notes);
-  const field = blocks.filter((block) => block.team !== "special");
+  const field = blocks.filter(isFieldBlock);
   const specialEvents = blocks
     .filter((block) => block.team === "special")
     .map((block) => {
@@ -99,12 +104,12 @@ export function buildMonthlyReport(year: number, monthIndex: number, notes: Acti
     });
 
   const fieldDays = new Set<number>();
-  const locationMap = new Map<string, { teams: Set<BlockTeam>; days: number[] }>();
+  const locationMap = new Map<string, { teams: Set<TeamKey>; days: number[] }>();
   const people = new Set<string>();
-  const teamDays = new Map<BlockTeam, Set<number>>();
-  const teamLocations = new Map<BlockTeam, Set<string>>();
-  const teamDeployments = new Map<BlockTeam, number>();
-  const teamReports = new Map<BlockTeam, { posted: number; total: number }>();
+  const teamDays = new Map<TeamKey, Set<number>>();
+  const teamLocations = new Map<TeamKey, Set<string>>();
+  const teamDeployments = new Map<TeamKey, number>();
+  const teamReports = new Map<TeamKey, { posted: number; total: number }>();
 
   for (const team of TEAM_ORDER) {
     teamDays.set(team, new Set());
@@ -127,7 +132,7 @@ export function buildMonthlyReport(year: number, monthIndex: number, notes: Acti
       }
     }
 
-    const loc = locationMap.get(location) ?? { teams: new Set<BlockTeam>(), days: [] };
+    const loc = locationMap.get(location) ?? { teams: new Set<TeamKey>(), days: [] };
     loc.teams.add(block.team);
     for (let day = block.start; day <= block.end; day++) loc.days.push(day);
     locationMap.set(location, loc);
@@ -188,6 +193,6 @@ export function buildMonthlyReport(year: number, monthIndex: number, notes: Acti
   };
 }
 
-export function teamReportLabel(team: BlockTeam) {
+export function teamReportLabel(team: TeamKey) {
   return teamLabel(team);
 }
