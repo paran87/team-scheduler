@@ -10,7 +10,7 @@ import { TabIcon } from "./TabIcons";
 const TABS: { id: TabName; label: string }[] = [
   { id: "dashboard", label: "Dashboard" },
   { id: "calendar", label: "Calendar" },
-  { id: "activity", label: "Activity" },
+  { id: "activity", label: "Activities" },
   { id: "reports", label: "Reports" },
 ];
 
@@ -39,7 +39,7 @@ export function TopBar({ activeTab, onTabChange }: TopBarProps) {
         {TABS.map((tab) => (
           <button
             key={tab.id}
-            className={`tab-btn${activeTab === tab.id ? " active" : ""}`}
+            className={`tab-btn tab-${tab.id}${activeTab === tab.id ? " active" : ""}`}
             onClick={() => onTabChange(tab.id)}
           >
             <TabIcon name={tab.id} />

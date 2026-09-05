@@ -116,7 +116,7 @@ export function Dashboard() {
 
           <section className={`tab-panel${activeTab === "activity" ? " active" : ""}`}>
             <div className="section-heading">
-              <h2>Team Activity Log</h2>
+              <h2>Team Activities Log</h2>
               <p>A chronological feed of every deployment logged this month.</p>
             </div>
             <ActivityTimeline viewYear={viewYear} viewMonth={viewMonth} />

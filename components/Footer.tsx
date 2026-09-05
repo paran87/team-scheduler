@@ -36,7 +36,7 @@ export function Footer({ onTabChange }: FooterProps) {
               Calendar
             </button>
             <button className="footer-link" onClick={() => goToTab("activity")}>
-              Activity
+              Activities
             </button>
             <button className="footer-link" onClick={() => goToTab("reports")}>
               Reports
