@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { BrandLogo } from "@/components/BrandLogo";
+import { ReportPhotoGallery } from "@/components/ReportPhotoGallery";
 import {
   parseNoteId,
   scheduledEvent,
@@ -114,18 +115,7 @@ export default async function ActivityReportPage({ params }: PageProps) {
 
           <section className="report-photos">
             <h3>Photos</h3>
-            {images.length ? (
-              <ul className="report-photo-grid">
-                {images.map((image) => (
-                  <li key={image.path}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={image.url} alt={image.name} />
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="report-empty">No photos uploaded yet.</p>
-            )}
+            <ReportPhotoGallery images={images} />
           </section>
         </article>
       </main>

@@ -606,7 +606,66 @@ button { font-family: inherit; }
   margin: 0; border-radius: 16px; overflow: hidden; background: #eef0f8;
   border: 1px solid var(--border); min-height: 140px;
 }
+.report-photo-open {
+  display: block; width: 100%; padding: 0; border: none; background: none;
+  cursor: zoom-in; position: relative;
+}
 .report-photo-grid img { width: 100%; height: 220px; object-fit: cover; display: block; }
+.report-photo-hint {
+  position: absolute; left: 10px; bottom: 10px;
+  background: rgba(20, 21, 42, 0.72); color: white;
+  font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+  border-radius: 999px; padding: 5px 10px; pointer-events: none;
+}
+.report-lightbox {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(12, 13, 28, 0.78);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.report-lightbox-card {
+  position: relative;
+  width: min(100%, 980px);
+  background: #0f111c;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+.report-lightbox-card img {
+  width: 100%; max-height: min(82vh, 860px);
+  object-fit: contain; display: block; background: #0b0c14;
+}
+.report-lightbox-top {
+  position: absolute; top: 12px; right: 12px; z-index: 2;
+  display: flex; align-items: center; gap: 8px;
+}
+.report-lightbox-icon,
+.report-lightbox-nav {
+  border: none; cursor: pointer; color: white;
+  background: rgba(15, 17, 28, 0.62);
+  display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.7);
+}
+.report-lightbox-icon {
+  width: 40px; height: 40px; border-radius: 999px;
+}
+.report-lightbox-icon svg { width: 18px; height: 18px; display: block; }
+.report-lightbox-icon.is-close {
+  font-size: 28px; font-weight: 700; line-height: 1;
+}
+.report-lightbox-icon.is-download {
+  color: #1c1e2b; background: linear-gradient(135deg, #f5d76e, #f59e0b);
+}
+.report-lightbox-nav {
+  position: absolute; top: 50%; z-index: 2;
+  width: 48px; height: 64px; border-radius: 16px;
+  transform: translateY(-50%);
+  font-size: 42px; font-weight: 600; line-height: 1;
+}
+.report-lightbox-nav.is-prev { left: 12px; }
+.report-lightbox-nav.is-next { right: 12px; }
+.report-lightbox-icon:hover,
+.report-lightbox-nav:hover { filter: brightness(1.12); }
 
 .admin-report-input { min-height: 140px; }
 .admin-photo-empty { margin: 0 0 8px; font-size: 12px; font-weight: 600; color: var(--muted); }
