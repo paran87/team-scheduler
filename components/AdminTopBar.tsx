@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { BrandLogo } from "./BrandLogo";
+import { BrandWordmark } from "./BrandWordmark";
 
 export function AdminTopBar() {
   return (
@@ -9,13 +10,10 @@ export function AdminTopBar() {
       <div className="topbar-inner">
         <div className="brand-block">
           <BrandLogo />
-          <div>
-            <p className="brand-title">Team Schedule Dashboard</p>
-            <p className="brand-sub">Admin · Edit schedule &amp; activities</p>
-          </div>
+          <BrandWordmark kicker="Admin · Edit schedule & activities" />
         </div>
         <Link href="/" className="backend-nav-link">
-          View dashboard
+          View public site
         </Link>
       </div>
     </header>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Plus_Jakarta_Sans, Sora } from "next/font/google";
+import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
 import "./globals.css";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -18,8 +19,8 @@ const sora = Sora({
 });
 
 export const metadata: Metadata = {
-  title: "Team Schedule Dashboard — September 2026",
-  description: "Field Deployment Calendar",
+  title: BRAND_NAME,
+  description: BRAND_TAGLINE,
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { BRAND_FOOTER_LINE, BRAND_NAME } from "@/lib/brand";
 import type { TabName } from "@/lib/types";
 import { BrandLogo } from "./BrandLogo";
+import { BrandWordmark } from "./BrandWordmark";
 
 type FooterProps = {
   onTabChange: (tab: TabName) => void;
@@ -20,8 +22,8 @@ export function Footer({ onTabChange }: FooterProps) {
         <div className="footer-brand">
           <BrandLogo />
           <div>
-            <h4>Team Schedule Dashboard</h4>
-            <p>Keeping every field team on track.</p>
+            <BrandWordmark tone="dark" />
+            <p>{BRAND_FOOTER_LINE}</p>
           </div>
         </div>
         <div className="footer-links">
@@ -58,7 +60,7 @@ export function Footer({ onTabChange }: FooterProps) {
         </div>
       </div>
       <div className="footer-bottom">
-        <span>© 2026 Team Schedule Dashboard. All rights reserved.</span>
+        <span>© 2026 {BRAND_NAME}. All rights reserved.</span>
         <span>Built for field operations coordination.</span>
       </div>
     </footer>

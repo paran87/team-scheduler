@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { BrandLogo } from "./BrandLogo";
+import { BrandWordmark } from "./BrandWordmark";
 import { BackendConsole } from "./BackendConsole";
 
 const ADMIN_NAME = "kath";
@@ -35,13 +36,10 @@ export function BackendGate() {
         <div className="backend-header-inner">
           <div className="brand-block">
             <BrandLogo />
-            <div>
-              <p className="brand-title">Admin Console</p>
-              <p className="brand-sub">Enter Admin and Password to continue</p>
-            </div>
+            <BrandWordmark kicker="Admin · Enter name and password to continue" />
           </div>
           <Link href="/" className="backend-dash-link">
-            ← Public dashboard
+            ← Public site
           </Link>
         </div>
       </header>

@@ -3,6 +3,8 @@
 import Link from "next/link";
 import type { TabName } from "@/lib/types";
 import { BrandLogo } from "./BrandLogo";
+import { BrandWordmark } from "./BrandWordmark";
+import { OkbWebsiteButton } from "./OkbWebsiteButton";
 import { TabIcon } from "./TabIcons";
 
 const TABS: { id: TabName; label: string }[] = [
@@ -23,14 +25,14 @@ export function TopBar({ activeTab, onTabChange }: TopBarProps) {
       <div className="topbar-inner">
         <div className="brand-block">
           <BrandLogo />
-          <div>
-            <p className="brand-title">Team Schedule Dashboard</p>
-            <p className="brand-sub">Field Deployment Calendar</p>
-          </div>
+          <BrandWordmark />
         </div>
-        <Link href="/backend" className="backend-nav-link">
-          Admin
-        </Link>
+        <div className="topbar-actions">
+          <OkbWebsiteButton />
+          <Link href="/backend" className="backend-nav-link">
+            Admin
+          </Link>
+        </div>
       </div>
 
       <nav className="tab-nav">
