@@ -7,7 +7,8 @@ import { TeamAvatar } from "./TeamAvatar";
 import { TeamLink } from "./TeamLink";
 import { ActivityFields } from "./ActivityFields";
 import { useActivityNotes } from "./ActivityNotesProvider";
-import { findNote, toDateKey } from "@/lib/activity-notes";
+import { findNote, activityReportPath, toDateKey } from "@/lib/activity-notes";
+import { durationLabelForAssignment } from "@/lib/assignment-duration";
 
 type DetailPanelProps = {
   viewYear: number;
@@ -69,8 +70,9 @@ export function DetailPanel({
           <div className="name">{special.event}</div>
           <ActivityFields
             location={special.place || specialNote?.location}
+            duration={durationLabelForAssignment(viewYear, viewMonth, selectedDay, "special", notes, special.start, special.end)}
             activity={special.activity ?? specialNote?.activity}
-            remarks={special.remarks ?? specialNote?.remarks}
+            reportHref={activityReportPath(dateKey, "special")}
             variant="onDark"
           />
         </div>
@@ -81,10 +83,15 @@ export function DetailPanel({
           const note = findNote(notes, dateKey, entry.team);
           const location = entry.place || note?.location;
           const placeImage = getPlaceImage(location);
-          const rangeText =
-            entry.start !== entry.end
-              ? `${MONTH_NAMES[viewMonth].slice(0, 3)} ${entry.start} – ${entry.end}`
-              : "";
+          const duration = durationLabelForAssignment(
+            viewYear,
+            viewMonth,
+            selectedDay,
+            entry.team,
+            notes,
+            entry.start,
+            entry.end,
+          );
 
           return (
             <div key={`${entry.team}-${index}`} className="team-card">
@@ -109,14 +116,18 @@ export function DetailPanel({
                 </div>
               </div>
               <div className="team-body">
-                <TeamLink team={entry.team} className="team-name-row team-nav-link">
+                <TeamLink team={entry.team} date={dateKey} className="team-name-row team-nav-link">
                   <span className={`team-chip ${meta.chipSolid}`}>{meta.label}</span>
                   <TeamAvatar teamKey={entry.team} size={40} />
                 </TeamLink>
                 <p className="team-place">{location}</p>
                 {entry.event && entry.event !== location ? <p className="team-event">{entry.event}</p> : null}
-                <ActivityFields location={location} activity={entry.activity ?? note?.activity} remarks={entry.remarks ?? note?.remarks} />
-                {rangeText ? <p className="team-range">Duration: {rangeText}</p> : null}
+                <ActivityFields
+                  location={location}
+                  duration={duration}
+                  activity={entry.activity ?? note?.activity}
+                  reportHref={activityReportPath(dateKey, entry.team)}
+                />
               </div>
             </div>
           );

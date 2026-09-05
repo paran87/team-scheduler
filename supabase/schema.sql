@@ -12,6 +12,8 @@ create table if not exists public.activity_notes (
   hidden boolean not null default false,
   lat double precision,
   lng double precision,
+  members jsonb,
+  report_images jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
@@ -49,3 +51,9 @@ create policy "activity_notes_select"
 revoke all on table public.activity_notes from anon, authenticated;
 grant select on table public.activity_notes to anon, authenticated;
 grant all on table public.activity_notes to service_role;
+
+comment on column public.activity_notes.members is
+  'Optional activity-only roster override for this date/team. Null means use the base team roster.';
+
+comment on column public.activity_notes.report_images is
+  'Activity Report/MOM photo metadata: [{ path, url, name }]. Files live in the activity-reports storage bucket.';

@@ -32,23 +32,9 @@ export function BackendConsole() {
     setSelectedDay(null);
   }
 
-  function goToToday() {
-    const today = new Date();
-    setViewYear(today.getFullYear());
-    setViewMonth(today.getMonth());
-    setPanelOpen(false);
-    setSelectedDay(null);
-  }
-
   return (
     <ActivityNotesProvider>
-      <AdminTopBar
-        viewYear={viewYear}
-        viewMonth={viewMonth}
-        onPrevMonth={() => goToMonth(-1)}
-        onNextMonth={() => goToMonth(1)}
-        onToday={goToToday}
-      />
+      <AdminTopBar />
 
       <Legend hint="Click any date to edit schedule" />
 
@@ -60,6 +46,8 @@ export function BackendConsole() {
               viewMonth={viewMonth}
               selectedDay={selectedDay}
               onSelectDay={selectDay}
+              onPrevMonth={() => goToMonth(-1)}
+              onNextMonth={() => goToMonth(1)}
             />
             <AdminDetailPanel
               viewYear={viewYear}

@@ -13,6 +13,7 @@ create table if not exists public.activity_notes (
   hidden boolean not null default false,
   lat double precision,
   lng double precision,
+  members jsonb,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );

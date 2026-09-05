@@ -12,6 +12,8 @@ type CalendarGridProps = {
   viewMonth: number;
   selectedDay: number | null;
   onSelectDay: (day: number) => void;
+  onPrevMonth?: () => void;
+  onNextMonth?: () => void;
 };
 
 type BlankCell = { kind: "blank"; key: string; num: number };
@@ -72,15 +74,43 @@ export function CalendarGrid({
   viewMonth,
   selectedDay,
   onSelectDay,
+  onPrevMonth,
+  onNextMonth,
 }: CalendarGridProps) {
   const { notes } = useActivityNotes();
   const cells = getCells(viewYear, viewMonth, selectedDay, notes);
 
   return (
     <div className="calendar-wrap">
-      <h2 className="calendar-month-title">
-        {MONTH_NAMES[viewMonth]} {viewYear}
-      </h2>
+      <div className="calendar-month-nav">
+        <button
+          type="button"
+          className="calendar-nav-btn"
+          title="Previous month"
+          aria-label="Previous month"
+          onClick={onPrevMonth}
+          disabled={!onPrevMonth}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
+        <h2 className="calendar-month-title">
+          {MONTH_NAMES[viewMonth]} {viewYear}
+        </h2>
+        <button
+          type="button"
+          className="calendar-nav-btn"
+          title="Next month"
+          aria-label="Next month"
+          onClick={onNextMonth}
+          disabled={!onNextMonth}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
+      </div>
       <div className="weekday-row">
         <div>Sun</div>
         <div>Mon</div>

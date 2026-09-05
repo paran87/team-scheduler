@@ -1,6 +1,6 @@
 export type TeamKey = "usec" | "b" | "a";
 export type BlockTeam = TeamKey | "special";
-export type TabName = "calendar" | "activity" | "assignment" | "map";
+export type TabName = "dashboard" | "calendar" | "activity" | "reports";
 export type TeamFilter = TeamKey | "all";
 
 export type AssignmentRow = {

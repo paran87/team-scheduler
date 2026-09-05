@@ -1,4 +1,5 @@
 import { TEAM_META } from "./schedule-data";
+import type { ActivityMember } from "./activity-notes";
 import type { TeamKey } from "./types";
 
 export type TeamPerson = {
@@ -73,4 +74,24 @@ export function personInitials(name: string) {
   const parts = cleaned.split(/\s+/).filter(Boolean);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
+
+/** Flat base roster for a team. Used as the starting point for activity-specific composition. */
+export function baseActivityMembers(team: TeamKey | "special"): ActivityMember[] {
+  if (team === "special") return [];
+  const roster = TEAM_ROSTERS[team];
+  return [
+    {
+      id: `${team}__lead`,
+      name: roster.lead.name,
+      title: roster.lead.title,
+      ...(roster.lead.photo ? { photo: roster.lead.photo } : {}),
+    },
+    ...roster.members.map((member, index) => ({
+      id: `${team}__member-${index}`,
+      name: member.name,
+      title: member.title,
+      ...(member.photo ? { photo: member.photo } : {}),
+    })),
+  ];
 }

@@ -10,7 +10,9 @@ import {
   scheduledEvent,
   scheduledLocation,
   type ActivityNote,
+  type ActivityReportImage,
 } from "./activity-notes";
+import { listActivityReportImages, copyActivityReportImages, removeActivityReportFolder, readRosterOverrides, writeRosterOverride, removeRosterOverride } from "./activity-report-storage";
 import { resolveCoords } from "./geocode";
 import { getSupabase, getSupabaseWriter, isSupabaseConfigured, isSupabaseWriterConfigured, supabaseConfigHint } from "./supabase";
 
@@ -32,6 +34,8 @@ export type ActivityNoteRow = {
   hidden: boolean;
   lat: number | null;
   lng: number | null;
+  members?: ActivityNote["members"] | null;
+  report_images?: ActivityReportImage[] | null;
   updated_at: string;
 };
 
@@ -47,6 +51,69 @@ export function toDateOnly(value: string) {
   return match?.[1] ?? value.trim();
 }
 
+function normalizeReportImages(value: unknown): ActivityNote["reportImages"] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const images = value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return null;
+      const row = entry as Record<string, unknown>;
+      const url = typeof row.url === "string" ? row.url.trim() : "";
+      const imagePath = typeof row.path === "string" ? row.path.trim() : "";
+      if (!url || !imagePath) return null;
+      const name = typeof row.name === "string" ? row.name.trim() : imagePath.split("/").pop() || "photo";
+      return { path: imagePath, url, name };
+    })
+    .filter((entry): entry is ActivityReportImage => Boolean(entry));
+  return images.length ? images : undefined;
+}
+
+type ExtraColumns = { members: boolean; reportImages: boolean };
+let extraColumns: ExtraColumns | null = null;
+
+async function probeExtraColumns(force = false): Promise<ExtraColumns> {
+  if (extraColumns && !force) return extraColumns;
+  if (!isSupabaseConfigured()) {
+    extraColumns = { members: true, reportImages: true };
+    return extraColumns;
+  }
+  const supabase = getSupabase();
+  const [members, reportImages] = await Promise.all([
+    supabase.from("activity_notes").select("members").limit(1),
+    supabase.from("activity_notes").select("report_images").limit(1),
+  ]);
+  extraColumns = {
+    members: !members.error,
+    reportImages: !reportImages.error,
+  };
+  return extraColumns;
+}
+
+export function resetActivityNoteColumnCache() {
+  extraColumns = null;
+}
+
+function normalizeMembers(value: unknown): ActivityNote["members"] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const members = value
+    .map((entry, index) => {
+      if (!entry || typeof entry !== "object") return null;
+      const row = entry as Record<string, unknown>;
+      const name = typeof row.name === "string" ? row.name.trim() : "";
+      if (!name) return null;
+      const id = typeof row.id === "string" && row.id.trim() ? row.id.trim() : `member-${index}`;
+      const title = typeof row.title === "string" ? row.title.trim() : "";
+      const photo = typeof row.photo === "string" ? row.photo.trim() : "";
+      return {
+        id,
+        name,
+        ...(title ? { title } : {}),
+        ...(photo ? { photo } : {}),
+      };
+    })
+    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+  return members.length ? members : undefined;
+}
+
 function normalizeNotes(parsed: unknown): ActivityNote[] {
   if (!Array.isArray(parsed)) return [];
   return parsed.filter((note): note is ActivityNote => {
@@ -58,6 +125,12 @@ function normalizeNotes(parsed: unknown): ActivityNote[] {
     if (typeof note.location !== "string") note.location = "";
     if (typeof note.event !== "string") delete note.event;
     if (note.hidden !== true) delete note.hidden;
+    const members = normalizeMembers(note.members);
+    if (members) note.members = members;
+    else delete note.members;
+    const reportImages = normalizeReportImages(note.reportImages);
+    if (reportImages) note.reportImages = reportImages;
+    else delete note.reportImages;
     return typeof note.activity === "string" && typeof note.remarks === "string";
   });
 }
@@ -66,6 +139,8 @@ export function rowToNote(row: ActivityNoteRow): ActivityNote | null {
   if (!isBlockTeam(row.team)) return null;
   const date = toDateOnly(row.date);
   if (!parseDateKey(date)) return null;
+  const members = normalizeMembers(row.members);
+  const reportImages = normalizeReportImages(row.report_images);
   return {
     id: row.id,
     date,
@@ -77,6 +152,8 @@ export function rowToNote(row: ActivityNoteRow): ActivityNote | null {
     ...(row.event ? { event: row.event } : {}),
     ...(row.hidden ? { hidden: true } : {}),
     ...(row.lat != null && row.lng != null ? { lat: row.lat, lng: row.lng } : {}),
+    ...(members ? { members } : {}),
+    ...(reportImages ? { reportImages } : {}),
   };
 }
 
@@ -92,8 +169,19 @@ export function noteToRow(note: ActivityNote): ActivityNoteRow {
     hidden: Boolean(note.hidden),
     lat: note.lat ?? null,
     lng: note.lng ?? null,
+    members: note.members?.length ? note.members : null,
+    report_images: note.reportImages?.length ? note.reportImages : [],
     updated_at: note.updatedAt,
   };
+}
+
+async function persistableRow(note: ActivityNote) {
+  const row = noteToRow(note);
+  const extra = await probeExtraColumns();
+  const payload: Record<string, unknown> = { ...row };
+  if (!extra.members) delete payload.members;
+  if (!extra.reportImages) delete payload.report_images;
+  return payload;
 }
 
 async function readFromPath(file: string): Promise<ActivityNote[] | null> {
@@ -133,10 +221,19 @@ async function writeLocalNotes(notes: ActivityNote[]) {
   return sorted;
 }
 
+async function applyRosterOverrides(notes: ActivityNote[]): Promise<ActivityNote[]> {
+  const overrides = await readRosterOverrides();
+  return notes.map((note) => {
+    if (note.members?.length) return note;
+    const members = normalizeMembers(overrides[note.id]);
+    return members ? { ...note, members } : note;
+  });
+}
+
 async function readSupabaseNotes(): Promise<ActivityNote[]> {
   const { data, error } = await getSupabase()
     .from("activity_notes")
-    .select("id, date, team, location, activity, remarks, event, hidden, lat, lng, updated_at")
+    .select("*")
     .order("date", { ascending: true })
     .order("team", { ascending: true });
 
@@ -144,9 +241,30 @@ async function readSupabaseNotes(): Promise<ActivityNote[]> {
     throw new Error(`Supabase read failed: ${error.message}`);
   }
 
-  return (data ?? [])
-    .map((row) => rowToNote(row as ActivityNoteRow))
-    .filter((note): note is ActivityNote => Boolean(note));
+  return applyRosterOverrides(
+    (data ?? [])
+      .map((row) => rowToNote(row as ActivityNoteRow))
+      .filter((note): note is ActivityNote => Boolean(note)),
+  );
+}
+
+export async function readActivityNote(id: string): Promise<ActivityNote | null> {
+  if (isSupabaseConfigured()) {
+    const { data, error } = await getSupabase().from("activity_notes").select("*").eq("id", id).maybeSingle();
+    if (error) throw new Error(`Supabase read failed: ${error.message}`);
+    const note = data ? rowToNote(data as ActivityNoteRow) : null;
+    if (!note) return null;
+    const [hydrated] = await applyRosterOverrides([note]);
+    return hydrated ?? note;
+  }
+  const notes = await readLocalNotes();
+  return notes.find((note) => note.id === id) ?? null;
+}
+
+export async function resolveReportImages(id: string): Promise<ActivityReportImage[]> {
+  const note = await readActivityNote(id);
+  if (note?.reportImages?.length) return note.reportImages;
+  return listActivityReportImages(id);
 }
 
 function assertPersistentStorageAvailable() {
@@ -171,7 +289,8 @@ export async function migrateLocalActivityNotes() {
   if (!local.length) {
     return { migrated: 0, notes: await readSupabaseNotes() };
   }
-  const { error } = await getSupabaseWriter().from("activity_notes").upsert(local.map(noteToRow), { onConflict: "id" });
+  const rows = await Promise.all(local.map((note) => persistableRow(note)));
+  const { error } = await getSupabaseWriter().from("activity_notes").upsert(rows, { onConflict: "id" });
   if (error) {
     throw new Error(`Supabase migrate failed: ${error.message}`);
   }
@@ -207,7 +326,8 @@ export async function writeActivityNotes(notes: ActivityNote[]) {
     }
 
     if (sorted.length) {
-      const { error: upsertError } = await supabase.from("activity_notes").upsert(sorted.map(noteToRow), { onConflict: "id" });
+      const rows = await Promise.all(sorted.map((note) => persistableRow(note)));
+      const { error: upsertError } = await supabase.from("activity_notes").upsert(rows, { onConflict: "id" });
       if (upsertError) throw new Error(`Supabase upsert failed: ${upsertError.message}`);
     }
     return sorted;
@@ -224,6 +344,8 @@ export async function upsertActivityNote(input: {
   remarks: string;
   event?: string;
   hidden?: boolean;
+  members?: ActivityNote["members"] | null;
+  reportImages?: ActivityNote["reportImages"] | null;
 }) {
   const date = toDateOnly(input.date);
   if (!parseDateKey(date)) {
@@ -242,6 +364,31 @@ export async function upsertActivityNote(input: {
       ? { lat: previous.lat, lng: previous.lng }
       : await resolveCoords(location);
 
+  const members =
+    input.members === null
+      ? undefined
+      : input.members !== undefined
+        ? normalizeMembers(input.members)
+        : previous?.members;
+
+  const reportImagesInput =
+    input.reportImages === null
+      ? undefined
+      : input.reportImages !== undefined
+        ? normalizeReportImages(input.reportImages)
+        : previous?.reportImages;
+  const reportImages =
+    reportImagesInput?.length && isSupabaseWriterConfigured()
+      ? await copyActivityReportImages(reportImagesInput[0]?.path.split("/")[0] || id, id, reportImagesInput)
+      : reportImagesInput;
+
+  const extra = await probeExtraColumns(Boolean(members || input.members === null));
+  if (input.members !== undefined && !extra.members) {
+    await writeRosterOverride(id, members ?? null);
+  } else if (extra.members && input.members !== undefined) {
+    await removeRosterOverride(id).catch(() => undefined);
+  }
+
   const next: ActivityNote = {
     id,
     date,
@@ -253,17 +400,19 @@ export async function upsertActivityNote(input: {
     ...(event ? { event } : {}),
     ...(input.hidden ? { hidden: true } : {}),
     ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
+    ...(members ? { members } : {}),
+    ...(reportImages ? { reportImages } : {}),
   };
 
   if (isSupabaseConfigured()) {
     assertPersistentStorageAvailable();
     const supabase = getSupabaseWriter();
-    const { error } = await supabase.from("activity_notes").upsert(noteToRow(next), { onConflict: "id" });
+    const { error } = await supabase.from("activity_notes").upsert(await persistableRow(next), { onConflict: "id" });
     if (error) throw new Error(`Supabase upsert failed: ${error.message}`);
 
     const { data: verified, error: verifyError } = await getSupabase()
       .from("activity_notes")
-      .select("id, date, team, location, activity, remarks, event, hidden, lat, lng, updated_at")
+      .select("*")
       .eq("id", id)
       .maybeSingle();
     if (verifyError) {
@@ -273,6 +422,13 @@ export async function upsertActivityNote(input: {
     if (!saved) {
       throw new Error("Save appeared to succeed but the activity could not be read back from Supabase.");
     }
+    if (!saved.reportImages?.length && next.reportImages?.length) {
+      saved.reportImages = next.reportImages;
+    }
+    if (next.members?.length && !saved.members?.length) {
+      saved.members = next.members;
+    }
+    if (input.members === null) delete saved.members;
     return saved;
   }
 
@@ -288,6 +444,8 @@ export async function upsertActivityNote(input: {
 export async function deleteActivityNote(id: string) {
   if (isSupabaseConfigured()) {
     assertPersistentStorageAvailable();
+    await removeActivityReportFolder(id).catch(() => undefined);
+    await removeRosterOverride(id).catch(() => undefined);
     const { error } = await getSupabaseWriter().from("activity_notes").delete().eq("id", id);
     if (error) throw new Error(`Supabase delete failed: ${error.message}`);
     return readSupabaseNotes();

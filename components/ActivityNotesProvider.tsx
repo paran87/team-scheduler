@@ -26,7 +26,9 @@ const ActivityNotesContext = createContext<ActivityNotesContextValue>({
   replaceNotes: () => {},
 });
 
-const REFRESH_MS = 30_000;
+const REFRESH_VISIBLE_MS = 4_000;
+const REFRESH_HIDDEN_MS = 30_000;
+const STORAGE_KEY = `${ACTIVITY_CHANNEL}:updated`;
 
 async function loadNotes() {
   try {
@@ -73,9 +75,17 @@ export function ActivityNotesProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void refresh();
-    const timer = window.setInterval(() => {
+
+    let timer = window.setInterval(() => {
       void refresh();
-    }, REFRESH_MS);
+    }, document.hidden ? REFRESH_HIDDEN_MS : REFRESH_VISIBLE_MS);
+
+    function restartTimer() {
+      window.clearInterval(timer);
+      timer = window.setInterval(() => {
+        void refresh();
+      }, document.hidden ? REFRESH_HIDDEN_MS : REFRESH_VISIBLE_MS);
+    }
 
     let channel: BroadcastChannel | null = null;
     try {
@@ -87,15 +97,32 @@ export function ActivityNotesProvider({ children }: { children: ReactNode }) {
       channel = null;
     }
 
+    const onLiveUpdate = () => {
+      void refresh();
+    };
     const onFocus = () => {
       void refresh();
     };
+    const onVisibility = () => {
+      restartTimer();
+      if (!document.hidden) void refresh();
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === STORAGE_KEY) void refresh();
+    };
+
+    window.addEventListener(ACTIVITY_CHANNEL, onLiveUpdate);
     window.addEventListener("focus", onFocus);
+    window.addEventListener("storage", onStorage);
+    document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       window.clearInterval(timer);
       channel?.close();
+      window.removeEventListener(ACTIVITY_CHANNEL, onLiveUpdate);
       window.removeEventListener("focus", onFocus);
+      window.removeEventListener("storage", onStorage);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [refresh]);
 
@@ -115,5 +142,13 @@ export function notifyActivityNotesChanged() {
     channel.close();
   } catch {
     /* BroadcastChannel is unavailable in some browsers */
+  }
+  try {
+    localStorage.setItem(`${ACTIVITY_CHANNEL}:updated`, String(Date.now()));
+  } catch {
+    /* private mode or disabled storage */
+  }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(ACTIVITY_CHANNEL));
   }
 }

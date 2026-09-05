@@ -3,6 +3,19 @@ import type { BlockTeam, ScheduleBlock, TeamKey } from "./types";
 
 export const ACTIVITY_CHANNEL = "activity-notes";
 
+export type ActivityMember = {
+  id: string;
+  name: string;
+  title?: string;
+  photo?: string;
+};
+
+export type ActivityReportImage = {
+  path: string;
+  url: string;
+  name: string;
+};
+
 export type ActivityNote = {
   id: string;
   date: string;
@@ -15,7 +28,15 @@ export type ActivityNote = {
   hidden?: boolean;
   lat?: number;
   lng?: number;
+  /** Activity-specific roster for this date/team only. Base TEAM_ROSTERS stay unchanged. */
+  members?: ActivityMember[];
+  /** Photos attached to the Activity Report/MOM. Stored in Supabase Storage. */
+  reportImages?: ActivityReportImage[];
 };
+
+export function activityReportPath(date: string, team: BlockTeam) {
+  return `/activities/${encodeURIComponent(noteId(date, team))}`;
+}
 
 export function pad2(value: number) {
   return String(value).padStart(2, "0");

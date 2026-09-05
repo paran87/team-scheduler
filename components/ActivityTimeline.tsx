@@ -8,7 +8,8 @@ import { TeamAvatar } from "./TeamAvatar";
 import { TeamLink } from "./TeamLink";
 import { ActivityFields } from "./ActivityFields";
 import { useActivityNotes } from "./ActivityNotesProvider";
-import { notesForBlock } from "@/lib/activity-notes";
+import { activityReportPath, notesForBlock, toDateKey } from "@/lib/activity-notes";
+import { durationLabelForAssignment } from "@/lib/assignment-duration";
 
 type ActivityTimelineProps = {
   viewYear: number;
@@ -64,8 +65,9 @@ export function ActivityTimeline({ viewYear, viewMonth, focusId }: ActivityTimel
                     <p className="note">Special company-wide event</p>
                     <ActivityFields
                       location={block.place || fields.location}
+                      duration={durationLabelForAssignment(viewYear, viewMonth, block.start, block.team, notes, block.start, block.end)}
                       activity={block.activity ?? fields.activity}
-                      remarks={block.remarks ?? fields.remarks}
+                      reportHref={activityReportPath(toDateKey(viewYear, viewMonth, block.start), block.team)}
                       variant="onDark"
                     />
                   </div>
@@ -95,12 +97,13 @@ export function ActivityTimeline({ viewYear, viewMonth, focusId }: ActivityTimel
                   {block.event && block.event !== block.place ? <p className="note">{block.event}</p> : null}
                   <ActivityFields
                     location={block.place || fields.location}
+                    duration={durationLabelForAssignment(viewYear, viewMonth, block.start, block.team, notes, block.start, block.end)}
                     activity={block.activity ?? fields.activity}
-                    remarks={block.remarks ?? fields.remarks}
+                    reportHref={activityReportPath(toDateKey(viewYear, viewMonth, block.start), block.team)}
                   />
                 </div>
               </div>
-              <TeamLink team={block.team} className="team-nav-link">
+              <TeamLink team={block.team} date={toDateKey(viewYear, viewMonth, block.start)} className="team-nav-link">
                 <span style={{ display: "flex", alignItems: "center", gap: 0 }}>
                   <span className="activity-team-chip" style={{ background: meta.color }}>
                     {meta.label}

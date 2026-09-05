@@ -27,17 +27,17 @@ export function Footer({ onTabChange }: FooterProps) {
         <div className="footer-links">
           <div className="footer-col">
             <h5>Navigate</h5>
+            <button className="footer-link" onClick={() => goToTab("dashboard")}>
+              Dashboard
+            </button>
             <button className="footer-link" onClick={() => goToTab("calendar")}>
               Calendar
             </button>
             <button className="footer-link" onClick={() => goToTab("activity")}>
               Activity
             </button>
-            <button className="footer-link" onClick={() => goToTab("assignment")}>
-              Team Assignment
-            </button>
-            <button className="footer-link" onClick={() => goToTab("map")}>
-              Show Map
+            <button className="footer-link" onClick={() => goToTab("reports")}>
+              Reports
             </button>
             <Link className="footer-link" href="/backend">
               Admin

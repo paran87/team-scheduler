@@ -27,6 +27,26 @@ function sameVisibleBlock(a: ScheduleBlock, b: ScheduleBlock) {
   );
 }
 
+function mergeAdjacentBlocks(blocks: ScheduleBlock[]): ScheduleBlock[] {
+  const sorted = [...blocks].sort((a, b) => a.team.localeCompare(b.team) || a.start - b.start || a.end - b.end);
+  const merged: ScheduleBlock[] = [];
+
+  for (const block of sorted) {
+    const prev = merged[merged.length - 1];
+    if (prev && prev.team === block.team && block.start <= prev.end + 1 && sameVisibleBlock(prev, block)) {
+      merged[merged.length - 1] = {
+        ...prev,
+        start: Math.min(prev.start, block.start),
+        end: Math.max(prev.end, block.end),
+      };
+      continue;
+    }
+    merged.push({ ...block });
+  }
+
+  return merged.sort((a, b) => a.start - b.start || a.team.localeCompare(b.team));
+}
+
 export function getVisibleBlocks(
   year: number,
   monthIndex: number,
@@ -95,7 +115,7 @@ export function getVisibleBlocks(
     });
   }
 
-  return [...result, ...extras].sort((a, b) => a.start - b.start || a.team.localeCompare(b.team));
+  return mergeAdjacentBlocks([...result, ...extras]);
 }
 
 export function buildVisibleDayMap(

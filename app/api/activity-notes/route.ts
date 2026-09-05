@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { isBlockTeam, parseDateKey } from "@/lib/activity-notes";
+import { isBlockTeam, parseDateKey, type ActivityNote } from "@/lib/activity-notes";
 import { readActivityNotes, removeDashboardEntry, upsertActivityNote } from "@/lib/activity-store";
 
 export const dynamic = "force-dynamic";
@@ -32,8 +32,10 @@ export async function POST(request: NextRequest) {
       location?: string;
       activity?: string;
       remarks?: string;
+      reportImages?: ActivityNote["reportImages"] | null;
       event?: string;
       hidden?: boolean;
+      members?: ActivityNote["members"] | null;
     };
 
     if (body.action === "delete") {
@@ -50,14 +52,16 @@ export async function POST(request: NextRequest) {
     const location = typeof body.location === "string" ? body.location : "";
     const activity = typeof body.activity === "string" ? body.activity : "";
     const remarks = typeof body.remarks === "string" ? body.remarks : "";
+    const reportImages = body.reportImages === null ? null : Array.isArray(body.reportImages) ? body.reportImages : undefined;
     const event = typeof body.event === "string" ? body.event : "";
     const hidden = body.hidden === true;
+    const members = body.members === null ? null : Array.isArray(body.members) ? body.members : undefined;
 
     if (!parseDateKey(date) || !isBlockTeam(team)) {
       return Response.json({ error: "Enter a valid date and team." }, { status: 400, headers: NO_STORE });
     }
 
-    const note = await upsertActivityNote({ date, team, location, activity, remarks, event, hidden });
+    const note = await upsertActivityNote({ date, team, location, activity, remarks, reportImages, event, hidden, members });
     const notes = await readActivityNotes();
     return Response.json({ note, notes }, { headers: NO_STORE });
   } catch (error) {

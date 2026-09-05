@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { MONTH_NAMES, TEAM_META } from "@/lib/schedule-data";
 import { getMapPins, type MapPin } from "@/lib/map-pins";
 import { personInitials } from "@/lib/team-roster";
-import { notesForBlock } from "@/lib/activity-notes";
+import { activityReportPath, notesForBlock, toDateKey } from "@/lib/activity-notes";
+import { durationLabelForAssignment } from "@/lib/assignment-duration";
 import { getPlaceImage } from "@/lib/place-images";
 import { useActivityNotes } from "./ActivityNotesProvider";
 import { ActivityFields } from "./ActivityFields";
@@ -336,13 +337,18 @@ function MapActivityCard({
           </div>
         </div>
         <div className="team-body">
-          <TeamLink team={pin.team} className="team-name-row team-nav-link">
+          <TeamLink team={pin.team} date={toDateKey(viewYear, viewMonth, pin.start)} className="team-name-row team-nav-link">
             <span className={`team-chip ${meta.chipSolid}`}>{pin.teamLabel}</span>
             <TeamAvatar teamKey={pin.team} size={32} />
           </TeamLink>
           <p className="team-place">{pin.leadName}</p>
           {pin.event ? <p className="team-event">{pin.event}</p> : null}
-          <ActivityFields location={location} activity={fields.activity} remarks={fields.remarks} />
+          <ActivityFields
+            location={location}
+            duration={durationLabelForAssignment(viewYear, viewMonth, pin.start, pin.team, notes, pin.start, pin.end)}
+            activity={fields.activity}
+            reportHref={activityReportPath(toDateKey(viewYear, viewMonth, pin.start), pin.team)}
+          />
         </div>
       </div>
     </aside>

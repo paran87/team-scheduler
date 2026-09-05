@@ -8,7 +8,8 @@
     "start": "node --use-system-ca node_modules/next/dist/bin/next start",
     "lint": "eslint",
     "migrate:activity-notes": "node --use-system-ca scripts/migrate-activity-notes.mjs",
-    "verify:supabase": "node --use-system-ca scripts/verify-supabase-integration.mjs"
+    "verify:supabase": "node --use-system-ca scripts/verify-supabase-integration.mjs",
+    "setup:activity-reports": "node --use-system-ca scripts/setup-activity-reports.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.114.0",
