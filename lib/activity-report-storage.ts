@@ -3,7 +3,7 @@ import { getSupabase, getSupabaseWriter, isSupabaseConfigured, isSupabaseWriterC
 
 export const ACTIVITY_REPORT_BUCKET = "activity-reports";
 export const MAX_REPORT_IMAGE_BYTES = 4 * 1024 * 1024;
-export const MAX_REPORT_IMAGES = 12;
+export const MAX_REPORT_IMAGES = 20;
 export const REPORT_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const BUCKET_MIME_TYPES = [...REPORT_IMAGE_TYPES, "application/json", "text/plain"];
 

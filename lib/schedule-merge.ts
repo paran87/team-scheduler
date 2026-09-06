@@ -14,17 +14,11 @@ function applyNoteToBlock(block: ScheduleBlock, note?: ActivityNote): ScheduleBl
     place: text(note.location),
     event: text(note.event) || (block.team === "special" ? text(note.location) : undefined),
     activity: text(note.activity),
-    remarks: text(note.remarks),
   };
 }
 
 function sameVisibleBlock(a: ScheduleBlock, b: ScheduleBlock) {
-  return (
-    a.place === b.place &&
-    a.event === b.event &&
-    a.activity === b.activity &&
-    a.remarks === b.remarks
-  );
+  return a.place === b.place && a.event === b.event && a.activity === b.activity;
 }
 
 function mergeAdjacentBlocks(blocks: ScheduleBlock[]): ScheduleBlock[] {
@@ -111,7 +105,6 @@ export function getVisibleBlocks(
       place: note.location || undefined,
       event: note.event || (note.team === "special" ? note.location || note.activity || "Special Event" : undefined),
       activity: note.activity || undefined,
-      remarks: note.remarks || undefined,
     });
   }
 

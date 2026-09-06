@@ -93,14 +93,16 @@ export function mergeNotes(notes: ActivityNote[]) {
   const visible = notes.filter((note) => !note.hidden);
   const location = [...new Set(visible.map((note) => (note.location ?? "").trim()).filter(Boolean))];
   const activity = [...new Set(visible.map((note) => note.activity.trim()).filter(Boolean))];
-  const remarks = [...new Set(visible.map((note) => note.remarks.trim()).filter(Boolean))];
   const event = [...new Set(visible.map((note) => (note.event ?? "").trim()).filter(Boolean))];
   return {
     location: location.join(" · ") || undefined,
     activity: activity.join(" · ") || undefined,
-    remarks: remarks.join(" · ") || undefined,
     event: event.join(" · ") || undefined,
   };
+}
+
+export function noteHasReport(note?: ActivityNote | null) {
+  return Boolean(note?.remarks?.trim() || note?.reportImages?.length);
 }
 
 export function notesForBlock(

@@ -1,4 +1,4 @@
-import { activityReportPath, findNote, teamLabel, toDateKey, type ActivityNote } from "./activity-notes";
+import { activityReportPath, findNote, noteHasReport, teamLabel, toDateKey, type ActivityNote } from "./activity-notes";
 import { durationLabelForAssignment } from "./assignment-duration";
 import { membersForDate } from "./activity-composition";
 import { getVisibleBlocks } from "./schedule-merge";
@@ -59,14 +59,11 @@ function firstLine(value?: string) {
 }
 
 function noteHasMom(note?: ActivityNote) {
-  return Boolean(note?.remarks?.trim() || note?.reportImages?.length);
+  return noteHasReport(note);
 }
 
-function blockHasMom(block: ScheduleBlock, year: number, monthIndex: number, notes: ActivityNote[]) {
-  for (let day = block.start; day <= block.end; day++) {
-    if (noteHasMom(findNote(notes, toDateKey(year, monthIndex, day), block.team))) return true;
-  }
-  return false;
+function dayHasMom(dateKey: string, team: ScheduleBlock["team"], notes: ActivityNote[]) {
+  return noteHasMom(findNote(notes, dateKey, team));
 }
 
 function formatDayRanges(days: number[], monthIndex: number) {
@@ -120,7 +117,7 @@ export function buildMonthlyReport(year: number, monthIndex: number, notes: Acti
 
   for (const block of field) {
     const location = (block.place || block.event || "Unspecified").trim() || "Unspecified";
-    const posted = blockHasMom(block, year, monthIndex, notes);
+    const posted = dayHasMom(toDateKey(year, monthIndex, block.start), block.team, notes);
     fieldDays.add(block.start);
     for (let day = block.start; day <= block.end; day++) {
       fieldDays.add(day);
@@ -158,7 +155,7 @@ export function buildMonthlyReport(year: number, monthIndex: number, notes: Acti
         duration: durationLabelForAssignment(year, monthIndex, block.start, block.team, notes, block.start, block.end),
         activity: firstLine(block.activity) || firstLine(block.event) || "Scheduled deployment",
         reportHref: activityReportPath(dateKey, block.team),
-        posted: blockHasMom(block, year, monthIndex, notes),
+        posted: dayHasMom(dateKey, block.team, notes),
       };
     })
     .sort((a, b) => a.start - b.start || a.team.localeCompare(b.team));

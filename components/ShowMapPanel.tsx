@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { MONTH_NAMES, TEAM_META } from "@/lib/schedule-data";
 import { getMapPins, type MapPin } from "@/lib/map-pins";
 import { personInitials } from "@/lib/team-roster";
-import { activityReportPath, notesForBlock, toDateKey } from "@/lib/activity-notes";
+import { activityReportPath, findNote, noteHasReport, notesForBlock, toDateKey } from "@/lib/activity-notes";
 import { durationLabelForAssignment } from "@/lib/assignment-duration";
 import { getPlaceImage } from "@/lib/place-images";
 import { useActivityNotes } from "./ActivityNotesProvider";
@@ -289,6 +289,8 @@ function MapActivityCard({
 }) {
   const { notes } = useActivityNotes();
   const fields = notesForBlock(notes, viewYear, viewMonth, pin);
+  const startDateKey = toDateKey(viewYear, viewMonth, pin.start);
+  const startNote = findNote(notes, startDateKey, pin.team);
   const location = pin.place;
   const placeImage = getPlaceImage(location);
   const meta = TEAM_META[pin.team];
@@ -347,7 +349,7 @@ function MapActivityCard({
             location={location}
             duration={durationLabelForAssignment(viewYear, viewMonth, pin.start, pin.team, notes, pin.start, pin.end)}
             activity={fields.activity}
-            reportHref={activityReportPath(toDateKey(viewYear, viewMonth, pin.start), pin.team)}
+            reportHref={noteHasReport(startNote) ? activityReportPath(startDateKey, pin.team) : undefined}
           />
         </div>
       </div>

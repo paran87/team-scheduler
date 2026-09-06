@@ -7,7 +7,7 @@ import { TeamAvatar } from "./TeamAvatar";
 import { TeamLink } from "./TeamLink";
 import { ActivityFields } from "./ActivityFields";
 import { useActivityNotes } from "./ActivityNotesProvider";
-import { findNote, activityReportPath, toDateKey } from "@/lib/activity-notes";
+import { findNote, activityReportPath, noteHasReport, toDateKey } from "@/lib/activity-notes";
 import { durationLabelForAssignment } from "@/lib/assignment-duration";
 
 type DetailPanelProps = {
@@ -72,7 +72,7 @@ export function DetailPanel({
             location={special.place || specialNote?.location}
             duration={durationLabelForAssignment(viewYear, viewMonth, selectedDay, "special", notes, special.start, special.end)}
             activity={special.activity ?? specialNote?.activity}
-            reportHref={activityReportPath(dateKey, "special")}
+            reportHref={noteHasReport(specialNote) ? activityReportPath(dateKey, "special") : undefined}
             variant="onDark"
           />
         </div>
@@ -126,7 +126,7 @@ export function DetailPanel({
                   location={location}
                   duration={duration}
                   activity={entry.activity ?? note?.activity}
-                  reportHref={activityReportPath(dateKey, entry.team)}
+                  reportHref={noteHasReport(note) ? activityReportPath(dateKey, entry.team) : undefined}
                 />
               </div>
             </div>

@@ -23,6 +23,7 @@ import {
   MAX_DURATION_DAYS,
   resolveDuration,
 } from "@/lib/assignment-duration";
+import { MAX_REPORT_IMAGES } from "@/lib/activity-report-storage";
 import { DAY_NAMES, MONTH_NAMES, TEAM_META } from "@/lib/schedule-data";
 import { baseActivityMembers, personInitials } from "@/lib/team-roster";
 import type { BlockTeam } from "@/lib/types";
@@ -192,9 +193,6 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
   }, [pendingAdd, selectedTeam, teamRows]);
   const selectedNote = dateKey ? findNote(notes, dateKey, selectedTeam) : undefined;
   const printed = dateKey ? scheduledBlock(dateKey, selectedTeam) : undefined;
-  const resolvedDuration = dateKey ? resolveDuration(form.durationStart, form.durationEnd, dateKey) : null;
-  const durationDates = resolvedDuration ? eachDateKey(resolvedDuration.start, resolvedDuration.end) : [];
-  const durationLabel = resolvedDuration ? formatDurationLabel(resolvedDuration.start, resolvedDuration.end) : "";
   const availableTeams = TEAM_OPTIONS.filter((option) => !displayRows.some((row) => row.team === option.value));
   const usingCustomComposition = Boolean(selectedNote?.members?.length);
 
@@ -321,12 +319,22 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
     const files = Array.from(event.target.files ?? []);
     event.target.value = "";
     if (!dateKey || !files.length) return;
+    if (form.reportImages.length >= MAX_REPORT_IMAGES) {
+      setStatusError(true);
+      setStatus(`You can attach up to ${MAX_REPORT_IMAGES} photos.`);
+      return;
+    }
     setUploading(true);
     setStatus("");
     setStatusError(false);
     try {
       let latestImages = form.reportImages;
       for (const file of files) {
+        if (latestImages.length >= MAX_REPORT_IMAGES) {
+          setStatusError(true);
+          setStatus(`You can attach up to ${MAX_REPORT_IMAGES} photos.`);
+          break;
+        }
         const body = new FormData();
         body.append("date", dateKey);
         body.append("team", selectedTeam);
@@ -478,13 +486,15 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
       const keep = new Set(keepDates);
 
       for (const date of keepDates) {
+        const isSelectedDate = date === dateKey;
+        const existing = findNote(latestNotes, date, selectedTeam);
         const saved = await saveEntry({
           date,
           team: selectedTeam,
           location: form.location,
           activity: form.activity,
-          remarks: form.remarks,
-          reportImages: form.reportImages,
+          remarks: isSelectedDate ? form.remarks : (existing?.remarks ?? ""),
+          reportImages: isSelectedDate ? form.reportImages : existing?.reportImages,
           event: eventValue,
           hidden: false,
         });
@@ -659,7 +669,6 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
 
   const dow = new Date(viewYear, viewMonth, selectedDay).getDay();
   const meta = blockTeamMeta(selectedTeam);
-  const currentRow = teamRows.find((row) => row.team === selectedTeam);
   const entryId = noteId(dateKey, selectedTeam);
 
   if (viewMode === "composition") {
@@ -916,15 +925,9 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
 
             {selectedNote?.hidden ? (
               <p className="admin-hint warn">This assignment is hidden. Saving will restore it to the public dashboard.</p>
-            ) : printed ? (
-              <p className="admin-hint">
-                {currentRow?.printed
-                  ? `Editing the printed schedule for ${teamLabel(selectedTeam)}.`
-                  : `Editing ${teamLabel(selectedTeam)} on this date.`}
-              </p>
-            ) : (
+            ) : !printed ? (
               <p className="admin-hint warn">New activity — saving will add it to the calendar, activity log, and map.</p>
-            )}
+            ) : null}
 
             <label className="admin-field">
               <span>Location</span>
@@ -957,15 +960,6 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
                 />
               </label>
             </div>
-            <p className="admin-hint">
-              {durationDates.length > MAX_DURATION_DAYS
-                ? `Duration can be at most ${MAX_DURATION_DAYS} days.`
-                : !form.durationStart && !form.durationEnd
-                  ? `Leave blank to use ${MONTH_NAMES[viewMonth].slice(0, 3)} ${selectedDay} only.`
-                  : durationDates.length === 1
-                    ? `This assignment will cover ${durationLabel}.`
-                    : `This assignment will cover ${durationLabel} (${durationDates.length} days).`}
-            </p>
 
             <label className="admin-field">
               <span>Event / title</span>
@@ -1023,9 +1017,16 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
                 <p className="admin-photo-empty">No photos yet. Upload pictures to show them on the Activity Report/MOM page.</p>
               )}
               <label className="admin-upload-btn">
-                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple disabled={uploading || saving} onChange={(event) => void onUploadPhotos(event)} />
-                {uploading ? "Uploading…" : "Upload photos"}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  multiple
+                  disabled={uploading || saving || form.reportImages.length >= MAX_REPORT_IMAGES}
+                  onChange={(event) => void onUploadPhotos(event)}
+                />
+                {uploading ? "Uploading…" : form.reportImages.length >= MAX_REPORT_IMAGES ? "Photo limit reached" : "Upload photos"}
               </label>
+              <p className="admin-hint">Up to {MAX_REPORT_IMAGES} photos per report.</p>
               <a className="admin-report-open" href={activityReportPath(dateKey, selectedTeam)} target="_blank" rel="noreferrer">
                 Open Activity Report/MOM page
               </a>

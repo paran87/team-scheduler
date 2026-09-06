@@ -8,7 +8,7 @@ import { TeamAvatar } from "./TeamAvatar";
 import { TeamLink } from "./TeamLink";
 import { ActivityFields } from "./ActivityFields";
 import { useActivityNotes } from "./ActivityNotesProvider";
-import { activityReportPath, notesForBlock, toDateKey } from "@/lib/activity-notes";
+import { activityReportPath, findNote, noteHasReport, notesForBlock, toDateKey } from "@/lib/activity-notes";
 import { durationLabelForAssignment } from "@/lib/assignment-duration";
 
 type ActivityTimelineProps = {
@@ -51,6 +51,8 @@ export function ActivityTimeline({ viewYear, viewMonth, focusId }: ActivityTimel
 
         if (block.team === "special") {
           const fields = notesForBlock(notes, viewYear, viewMonth, block);
+          const startDateKey = toDateKey(viewYear, viewMonth, block.start);
+          const startNote = findNote(notes, startDateKey, block.team);
           return (
             <div
               key={`${block.team}-${block.start}-${index}`}
@@ -67,7 +69,7 @@ export function ActivityTimeline({ viewYear, viewMonth, focusId }: ActivityTimel
                       location={block.place || fields.location}
                       duration={durationLabelForAssignment(viewYear, viewMonth, block.start, block.team, notes, block.start, block.end)}
                       activity={block.activity ?? fields.activity}
-                      reportHref={activityReportPath(toDateKey(viewYear, viewMonth, block.start), block.team)}
+                      reportHref={noteHasReport(startNote) ? activityReportPath(startDateKey, block.team) : undefined}
                       variant="onDark"
                     />
                   </div>
@@ -79,6 +81,8 @@ export function ActivityTimeline({ viewYear, viewMonth, focusId }: ActivityTimel
 
         const meta = TEAM_META[block.team];
         const fields = notesForBlock(notes, viewYear, viewMonth, block);
+        const startDateKey = toDateKey(viewYear, viewMonth, block.start);
+        const startNote = findNote(notes, startDateKey, block.team);
         const id = activityId(block);
         const focused = focusId === id;
 
@@ -99,7 +103,7 @@ export function ActivityTimeline({ viewYear, viewMonth, focusId }: ActivityTimel
                     location={block.place || fields.location}
                     duration={durationLabelForAssignment(viewYear, viewMonth, block.start, block.team, notes, block.start, block.end)}
                     activity={block.activity ?? fields.activity}
-                    reportHref={activityReportPath(toDateKey(viewYear, viewMonth, block.start), block.team)}
+                    reportHref={noteHasReport(startNote) ? activityReportPath(startDateKey, block.team) : undefined}
                   />
                 </div>
               </div>
