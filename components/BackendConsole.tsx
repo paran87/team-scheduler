@@ -36,7 +36,7 @@ export function BackendConsole() {
     <ActivityNotesProvider>
       <AdminTopBar />
 
-      <Legend hint="Click any date to edit schedule" />
+      <Legend hint="Click any date to edit schedule" viewYear={viewYear} viewMonth={viewMonth} />
 
       <main>
         <div className="page">
@@ -48,6 +48,12 @@ export function BackendConsole() {
               onSelectDay={selectDay}
               onPrevMonth={() => goToMonth(-1)}
               onNextMonth={() => goToMonth(1)}
+              onJumpToday={() => {
+                const today = new Date();
+                setViewYear(today.getFullYear());
+                setViewMonth(today.getMonth());
+                selectDay(today.getDate());
+              }}
             />
             <AdminDetailPanel
               viewYear={viewYear}

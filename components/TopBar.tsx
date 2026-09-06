@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { TabName } from "@/lib/types";
 import { BrandLogo } from "./BrandLogo";
 import { BrandWordmark } from "./BrandWordmark";
+import { CommandRibbon } from "./CommandRibbon";
 import { OkbWebsiteButton } from "./OkbWebsiteButton";
 import { TabIcon } from "./TabIcons";
 
@@ -17,9 +18,10 @@ const TABS: { id: TabName; label: string }[] = [
 type TopBarProps = {
   activeTab: TabName;
   onTabChange: (tab: TabName) => void;
+  onOpenToday?: () => void;
 };
 
-export function TopBar({ activeTab, onTabChange }: TopBarProps) {
+export function TopBar({ activeTab, onTabChange, onOpenToday }: TopBarProps) {
   return (
     <header className="topbar">
       <div className="topbar-inner">
@@ -27,6 +29,7 @@ export function TopBar({ activeTab, onTabChange }: TopBarProps) {
           <BrandLogo />
           <BrandWordmark />
         </div>
+        <CommandRibbon onOpenToday={onOpenToday} />
         <div className="topbar-actions">
           <OkbWebsiteButton />
           <Link href="/backend" className="backend-nav-link">

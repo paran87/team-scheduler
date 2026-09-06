@@ -69,14 +69,22 @@ export function Dashboard({ initialTab }: { initialTab: TabName }) {
     router.replace(href, { scroll: false });
   }
 
-  function openTodayActivities() {
-    const today = new Date();
-    setViewYear(today.getFullYear());
-    setViewMonth(today.getMonth());
-    setSelectedDay(today.getDate());
+  function openDay(date: Date) {
+    setViewYear(date.getFullYear());
+    setViewMonth(date.getMonth());
+    setSelectedDay(date.getDate());
     setPanelOpen(true);
     setDashboardView("overview");
     switchTab("calendar");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function openTodayActivities() {
+    openDay(new Date());
+  }
+
+  function openReports() {
+    switchTab("reports");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -89,9 +97,9 @@ export function Dashboard({ initialTab }: { initialTab: TabName }) {
 
   return (
     <ActivityNotesProvider>
-      <TopBar activeTab={activeTab} onTabChange={switchTab} />
+      <TopBar activeTab={activeTab} onTabChange={switchTab} onOpenToday={() => openDay(new Date())} />
 
-      {activeTab === "calendar" ? <Legend /> : null}
+      {activeTab === "calendar" ? <Legend viewYear={viewYear} viewMonth={viewMonth} /> : null}
 
       <main>
         <div className="page">
@@ -108,6 +116,8 @@ export function Dashboard({ initialTab }: { initialTab: TabName }) {
                 <OverviewDashboard
                   onOpenTodayActivities={openTodayActivities}
                   onOpenTodayPersonnel={openTodayPersonnel}
+                  onOpenDay={openDay}
+                  onOpenReports={openReports}
                 />
               )
             ) : null}
@@ -122,6 +132,7 @@ export function Dashboard({ initialTab }: { initialTab: TabName }) {
                 onSelectDay={selectDay}
                 onPrevMonth={() => goToMonth(-1)}
                 onNextMonth={() => goToMonth(1)}
+                onJumpToday={() => openDay(new Date())}
               />
               <DetailPanel
                 viewYear={viewYear}
@@ -134,11 +145,14 @@ export function Dashboard({ initialTab }: { initialTab: TabName }) {
           </section>
 
           <section className={`tab-panel${activeTab === "activity" ? " active" : ""}`}>
-            <div className="section-heading">
-              <h2>Team Activities Log</h2>
-              <p>A chronological feed of every deployment logged this month.</p>
-            </div>
-            <ActivityTimeline viewYear={viewYear} viewMonth={viewMonth} />
+            {activeTab === "activity" ? (
+              <ActivityTimeline
+                viewYear={viewYear}
+                viewMonth={viewMonth}
+                onPrevMonth={() => goToMonth(-1)}
+                onNextMonth={() => goToMonth(1)}
+              />
+            ) : null}
           </section>
 
           <section className={`tab-panel${activeTab === "reports" ? " active" : ""}`}>
