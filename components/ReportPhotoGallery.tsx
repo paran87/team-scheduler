@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { ActivityReportImage } from "@/lib/activity-notes";
 
 type ReportPhotoGalleryProps = {
@@ -33,9 +34,16 @@ async function downloadPhoto(image: ActivityReportImage, index: number) {
 
 export function ReportPhotoGallery({ images }: ReportPhotoGalleryProps) {
   const [active, setActive] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const openedAt = useRef(0);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (active == null) return;
+    openedAt.current = Date.now();
 
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") setActive(null);
@@ -46,11 +54,14 @@ export function ReportPhotoGallery({ images }: ReportPhotoGalleryProps) {
     }
 
     window.addEventListener("keydown", onKey);
-    const previous = document.body.style.overflow;
+    const previousOverflow = document.body.style.overflow;
+    const previousTouch = document.body.style.touchAction;
     document.body.style.overflow = "hidden";
+    document.body.style.touchAction = "none";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previous;
+      document.body.style.overflow = previousOverflow;
+      document.body.style.touchAction = previousTouch;
     };
   }, [active, images.length]);
 
@@ -59,6 +70,74 @@ export function ReportPhotoGallery({ images }: ReportPhotoGalleryProps) {
   }
 
   const current = active == null ? null : images[active];
+
+  function closeLightbox() {
+    setActive(null);
+  }
+
+  function onBackdropPointerUp() {
+    if (Date.now() - openedAt.current < 450) return;
+    closeLightbox();
+  }
+
+  const lightbox =
+    current && active != null ? (
+      <div className="report-lightbox" onPointerUp={onBackdropPointerUp} role="presentation">
+        <div
+          className="report-lightbox-card"
+          role="dialog"
+          aria-modal="true"
+          aria-label={current.name || "Enlarged photo"}
+          onPointerUp={(event) => event.stopPropagation()}
+        >
+          <div className="report-lightbox-top">
+            <button
+              type="button"
+              className="report-lightbox-icon is-download"
+              aria-label="Download"
+              onClick={() => void downloadPhoto(current, active)}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M12 4v12" />
+                <path d="m7 12 5 5 5-5" />
+                <path d="M5 20h14" />
+              </svg>
+            </button>
+            <button type="button" className="report-lightbox-icon is-close" aria-label="Close" onClick={closeLightbox}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden>
+                <path d="M6.2 6.2 17.8 17.8" />
+                <path d="M17.8 6.2 6.2 17.8" />
+              </svg>
+            </button>
+          </div>
+
+          {images.length > 1 ? (
+            <button
+              type="button"
+              className="report-lightbox-nav is-prev"
+              aria-label="Previous"
+              onClick={() => setActive((active - 1 + images.length) % images.length)}
+            >
+              <span aria-hidden>‹</span>
+            </button>
+          ) : null}
+
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={current.url} alt={current.name} />
+
+          {images.length > 1 ? (
+            <button
+              type="button"
+              className="report-lightbox-nav is-next"
+              aria-label="Next"
+              onClick={() => setActive((active + 1) % images.length)}
+            >
+              <span aria-hidden>›</span>
+            </button>
+          ) : null}
+        </div>
+      </div>
+    ) : null;
 
   return (
     <>
@@ -72,7 +151,13 @@ export function ReportPhotoGallery({ images }: ReportPhotoGalleryProps) {
               aria-label={`Enlarge ${image.name || `photo ${index + 1}`}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={image.url} alt="" />
+              <img
+                src={image.url}
+                alt=""
+                loading={index < 2 ? "eager" : "lazy"}
+                decoding="async"
+                fetchPriority={index === 0 ? "high" : "low"}
+              />
               <span className="report-photo-hint" aria-hidden>
                 View
               </span>
@@ -80,61 +165,7 @@ export function ReportPhotoGallery({ images }: ReportPhotoGalleryProps) {
           </li>
         ))}
       </ul>
-
-      {current && active != null ? (
-        <div className="report-lightbox" onClick={() => setActive(null)} role="presentation">
-          <div
-            className="report-lightbox-card"
-            role="dialog"
-            aria-modal="true"
-            aria-label={current.name || "Enlarged photo"}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="report-lightbox-top">
-              <button
-                type="button"
-                className="report-lightbox-icon is-download"
-                aria-label="Download"
-                onClick={() => void downloadPhoto(current, active)}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M12 4v12" />
-                  <path d="m7 12 5 5 5-5" />
-                  <path d="M5 20h14" />
-                </svg>
-              </button>
-              <button type="button" className="report-lightbox-icon is-close" aria-label="Close" onClick={() => setActive(null)}>
-                <span aria-hidden>×</span>
-              </button>
-            </div>
-
-            {images.length > 1 ? (
-              <button
-                type="button"
-                className="report-lightbox-nav is-prev"
-                aria-label="Previous"
-                onClick={() => setActive((active - 1 + images.length) % images.length)}
-              >
-                <span aria-hidden>‹</span>
-              </button>
-            ) : null}
-
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={current.url} alt={current.name} />
-
-            {images.length > 1 ? (
-              <button
-                type="button"
-                className="report-lightbox-nav is-next"
-                aria-label="Next"
-                onClick={() => setActive((active + 1) % images.length)}
-              >
-                <span aria-hidden>›</span>
-              </button>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
+      {mounted && lightbox ? createPortal(lightbox, document.body) : null}
     </>
   );
 }

@@ -248,12 +248,16 @@ async function readSupabaseNotes(): Promise<ActivityNote[]> {
   );
 }
 
-export async function readActivityNote(id: string): Promise<ActivityNote | null> {
+export async function readActivityNote(
+  id: string,
+  options?: { includeRoster?: boolean },
+): Promise<ActivityNote | null> {
   if (isSupabaseConfigured()) {
     const { data, error } = await getSupabase().from("activity_notes").select("*").eq("id", id).maybeSingle();
     if (error) throw new Error(`Supabase read failed: ${error.message}`);
     const note = data ? rowToNote(data as ActivityNoteRow) : null;
     if (!note) return null;
+    if (options?.includeRoster === false) return note;
     const [hydrated] = await applyRosterOverrides([note]);
     return hydrated ?? note;
   }
@@ -261,9 +265,9 @@ export async function readActivityNote(id: string): Promise<ActivityNote | null>
   return notes.find((note) => note.id === id) ?? null;
 }
 
-export async function resolveReportImages(id: string): Promise<ActivityReportImage[]> {
-  const note = await readActivityNote(id);
-  if (note?.reportImages?.length) return note.reportImages;
+export async function resolveReportImages(id: string, note?: ActivityNote | null): Promise<ActivityReportImage[]> {
+  const resolved = note !== undefined ? note : await readActivityNote(id, { includeRoster: false });
+  if (resolved?.reportImages?.length) return resolved.reportImages;
   return listActivityReportImages(id);
 }
 

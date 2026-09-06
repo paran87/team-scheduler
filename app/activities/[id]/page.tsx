@@ -1,4 +1,3 @@
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import type { CSSProperties } from "react";
 import type { Metadata } from "next";
@@ -13,7 +12,7 @@ import {
 import { readActivityNote, resolveReportImages } from "@/lib/activity-store";
 import { BRAND_NAME } from "@/lib/brand";
 import { DAY_NAMES, MONTH_NAMES, TEAM_META } from "@/lib/schedule-data";
-import { backLinkFromReferer } from "@/lib/tabs";
+import { homeTabHref } from "@/lib/tabs";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -51,15 +50,14 @@ export default async function ActivityReportPage({ params }: PageProps) {
   const parsed = parseNoteId(id);
   if (!parsed) notFound();
 
-  const note = await readActivityNote(id);
-  const images = await resolveReportImages(id);
+  const note = await readActivityNote(id, { includeRoster: false });
+  const images = await resolveReportImages(id, note);
   const location = (note?.location || scheduledLocation(parsed.date, parsed.team) || "").trim();
   const event = (note?.event || scheduledEvent(parsed.date, parsed.team) || "").trim();
   const activity = (note?.activity || "").trim();
   const report = (note?.remarks || "").trim();
   const meta = parsed.team === "special" ? null : TEAM_META[parsed.team];
-  const hdrs = await headers();
-  const back = backLinkFromReferer(hdrs.get("referer"), hdrs.get("host"));
+  const back = { href: homeTabHref("activity"), label: "← Activities" };
 
   const teamColor = meta ? meta.color : "var(--special)";
   const teamName = meta ? meta.label : "Special Event";

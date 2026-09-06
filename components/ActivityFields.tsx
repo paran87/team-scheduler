@@ -27,7 +27,7 @@ export function ActivityFields({ location, duration, activity, reportHref, varia
         <dt>report:</dt>
         <dd>
           {reportHref ? (
-            <Link href={reportHref} className="activity-report-link">
+            <Link href={reportHref} prefetch className="activity-report-link">
               Activity Report/MOM
             </Link>
           ) : (
