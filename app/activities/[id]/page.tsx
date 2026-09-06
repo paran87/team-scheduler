@@ -67,7 +67,7 @@ export default async function ActivityReportPage({ params }: PageProps) {
   const weekday = weekdayName(parsed.date);
 
   return (
-    <div className="org-page report-page">
+    <div className="org-page report-page" style={{ "--pill": teamColor } as CSSProperties}>
       <header className="org-header report-header">
         <div className="report-header-fx" aria-hidden="true">
           <span className="report-orb is-indigo" />
@@ -94,8 +94,9 @@ export default async function ActivityReportPage({ params }: PageProps) {
       </header>
 
       <main className="org-main report-main">
-        <section className="report-hero" style={{ "--pill": teamColor } as CSSProperties}>
+        <section className="report-hero">
           <span className="report-hero-aura" aria-hidden="true" />
+          <span className="report-hero-grid" aria-hidden="true" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/assets/oplan-kontra-baha.png" alt="" aria-hidden="true" className="report-hero-watermark" />
 
@@ -105,76 +106,98 @@ export default async function ActivityReportPage({ params }: PageProps) {
             <img src="/assets/oplan-kontra-baha.png" alt={BRAND_NAME} className="report-hero-mark" />
           </div>
 
-          <p className="report-hero-eyebrow">
-            <span className="report-hero-spark" aria-hidden="true" />
-            Official Field Documentation
-          </p>
-
-          <h1 className="report-hero-title">
-            <span>Activity Report</span>
-            <span className="report-hero-slash" aria-hidden="true">/</span>
-            <span>MOM</span>
-          </h1>
+          <div className="report-hero-copy">
+            <p className="report-hero-eyebrow">
+              <span className="report-hero-spark" aria-hidden="true" />
+              Official field documentation
+            </p>
+            <h1 className="report-hero-title">
+              Activity Report <span className="report-hero-slash">/</span> MOM
+            </h1>
+            <p className="report-hero-facts">
+              {weekday ? <span>{weekday}</span> : null}
+              <strong>{formatDate(parsed.date)}</strong>
+              <span className="report-hero-place">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M12 21s7-5.7 7-11a7 7 0 1 0-14 0c0 5.3 7 11 7 11Z"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="12" cy="10" r="2.6" stroke="currentColor" strokeWidth="1.8" />
+                </svg>
+                {place}
+              </span>
+            </p>
+          </div>
 
           <span className="report-hero-pill">
             <span className="report-hero-dot" aria-hidden="true" />
             {teamName}
           </span>
-
-          <div className="report-hero-date">
-            {weekday ? <p className="report-hero-weekday">{weekday}</p> : null}
-            <h2>{formatDate(parsed.date)}</h2>
-          </div>
-
-          <p className="report-hero-place">
-            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M12 21s7-5.7 7-11a7 7 0 1 0-14 0c0 5.3 7 11 7 11Z"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinejoin="round"
-              />
-              <circle cx="12" cy="10" r="2.6" stroke="currentColor" strokeWidth="1.8" />
-            </svg>
-            {place}
-          </p>
-
-          <span className="report-hero-rule" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-          </span>
         </section>
 
         <article className="report-card">
-          <div className="report-meta">
-            {location ? (
-              <p>
-                <strong>Location</strong>
-                <span>{location}</span>
-              </p>
-            ) : null}
-            {event && event !== location ? (
-              <p>
-                <strong>Event</strong>
-                <span>{event}</span>
-              </p>
-            ) : null}
-            {activity ? (
-              <p>
-                <strong>Activity</strong>
-                <span className="report-pre">{activity}</span>
-              </p>
-            ) : null}
-          </div>
+          {location || (event && event !== location) || activity ? (
+            <div className="report-meta">
+              {location ? (
+                <p className="is-location">
+                  <span className="report-meta-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path d="M12 21s7-5.7 7-11a7 7 0 1 0-14 0c0 5.3 7 11 7 11Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+                      <circle cx="12" cy="10" r="2.6" stroke="currentColor" strokeWidth="1.8" />
+                    </svg>
+                  </span>
+                  <strong>Location</strong>
+                  <span>{location}</span>
+                </p>
+              ) : null}
+              {event && event !== location ? (
+                <p className="is-event">
+                  <span className="report-meta-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path d="M8 4.5v3M16 4.5v3M4.8 8.8h14.4M6.2 7.2h11.6A1.8 1.8 0 0 1 19.6 9v9.2a1.8 1.8 0 0 1-1.8 1.8H6.2A1.8 1.8 0 0 1 4.4 18.2V9a1.8 1.8 0 0 1 1.8-1.8Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                  <strong>Event</strong>
+                  <span>{event}</span>
+                </p>
+              ) : null}
+              {activity ? (
+                <p className="is-activity">
+                  <span className="report-meta-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <path d="M7 4.6h7.2L19 9.4v10a1.6 1.6 0 0 1-1.6 1.6H7A1.6 1.6 0 0 1 5.4 19.4V6.2A1.6 1.6 0 0 1 7 4.6Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+                      <path d="M14.1 4.6V9h4.6M8.4 13h7.2M8.4 16.6h5.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                  <strong>Activity</strong>
+                  <span>{activity}</span>
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           <section className="report-body">
-            <h3>Activity Report / Minutes of Meeting</h3>
+            <header className="report-section-head">
+              <p className="report-section-eyebrow">
+                <span className="report-section-dot" aria-hidden="true" />
+                Field minutes
+              </p>
+              <h3>Activity Report / Minutes of Meeting</h3>
+            </header>
             {report ? <div className="report-pre">{report}</div> : <p className="report-empty">No activity report has been posted yet.</p>}
           </section>
 
           <section className="report-photos">
-            <h3>Photos</h3>
+            <header className="report-section-head">
+              <p className="report-section-eyebrow">
+                <span className="report-section-dot" aria-hidden="true" />
+                {images.length ? `${images.length} photo${images.length === 1 ? "" : "s"}` : "Gallery"}
+              </p>
+              <h3>Photos</h3>
+            </header>
             <ReportPhotoGallery images={images} />
           </section>
         </article>
