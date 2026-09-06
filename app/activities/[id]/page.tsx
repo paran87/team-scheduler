@@ -1,6 +1,7 @@
-import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { BackLink } from "@/components/BackLink";
 import { BrandLogo } from "@/components/BrandLogo";
 import { ReportPhotoGallery } from "@/components/ReportPhotoGallery";
 import {
@@ -11,6 +12,7 @@ import {
 } from "@/lib/activity-notes";
 import { readActivityNote, resolveReportImages } from "@/lib/activity-store";
 import { MONTH_NAMES, TEAM_META } from "@/lib/schedule-data";
+import { backLinkFromReferer } from "@/lib/tabs";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -48,14 +50,14 @@ export default async function ActivityReportPage({ params }: PageProps) {
   const activity = (note?.activity || "").trim();
   const report = (note?.remarks || "").trim();
   const meta = parsed.team === "special" ? null : TEAM_META[parsed.team];
+  const hdrs = await headers();
+  const back = backLinkFromReferer(hdrs.get("referer"), hdrs.get("host"));
 
   return (
     <div className="org-page report-page">
       <header className="org-header">
         <div className="org-header-inner">
-          <Link href="/" className="org-back">
-            ← Dashboard
-          </Link>
+          <BackLink initialHref={back.href} initialLabel={back.label} />
           <div className="org-letterhead">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/assets/dpwh-logo.png" alt="Department of Public Works and Highways" className="org-seal org-seal-dpwh" />

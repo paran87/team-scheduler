@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { shiftMonth } from "@/lib/calendar";
+import { homeTabHref, TAB_STORAGE_KEY } from "@/lib/tabs";
 import type { TabName } from "@/lib/types";
 import { TopBar } from "./TopBar";
 import { Legend } from "./Legend";
@@ -14,13 +16,23 @@ import { ReportsPanel } from "./ReportsPanel";
 import { Footer } from "./Footer";
 import { ActivityNotesProvider } from "./ActivityNotesProvider";
 
-export function Dashboard() {
+export function Dashboard({ initialTab }: { initialTab: TabName }) {
+  const router = useRouter();
   const [viewYear, setViewYear] = useState(2026);
   const [viewMonth, setViewMonth] = useState(8);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabName>("dashboard");
+  const [activeTab, setActiveTab] = useState<TabName>(initialTab);
   const [dashboardView, setDashboardView] = useState<"overview" | "personnel">("overview");
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+    try {
+      sessionStorage.setItem(TAB_STORAGE_KEY, initialTab);
+    } catch {
+      /* sessionStorage unavailable */
+    }
+  }, [initialTab]);
 
   function closePanel() {
     setPanelOpen(false);
@@ -48,6 +60,13 @@ export function Dashboard() {
     setActiveTab(tab);
     if (tab !== "calendar") closePanelSilently();
     if (tab !== "dashboard") setDashboardView("overview");
+    try {
+      sessionStorage.setItem(TAB_STORAGE_KEY, tab);
+    } catch {
+      /* sessionStorage unavailable */
+    }
+    const href = homeTabHref(tab);
+    router.replace(href, { scroll: false });
   }
 
   function openTodayActivities() {
@@ -57,7 +76,7 @@ export function Dashboard() {
     setSelectedDay(today.getDate());
     setPanelOpen(true);
     setDashboardView("overview");
-    setActiveTab("calendar");
+    switchTab("calendar");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
