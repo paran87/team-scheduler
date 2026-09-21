@@ -4,13 +4,20 @@ type ActivityFieldsProps = {
   location?: string;
   duration?: string;
   activity?: string;
+  assignedTo?: string;
   reportHref?: string;
   variant?: "default" | "onDark";
 };
 
-export function ActivityFields({ location, duration, activity, reportHref, variant = "default" }: ActivityFieldsProps) {
+export function ActivityFields({ location, duration, activity, assignedTo, reportHref, variant = "default" }: ActivityFieldsProps) {
   return (
     <dl className={`activity-fields${variant === "onDark" ? " on-dark" : ""}`}>
+      {assignedTo ? (
+        <div className="activity-field">
+          <dt>assigned to:</dt>
+          <dd>{assignedTo}</dd>
+        </div>
+      ) : null}
       <div className="activity-field">
         <dt>location:</dt>
         <dd>{location ?? ""}</dd>

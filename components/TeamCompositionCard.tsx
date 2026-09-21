@@ -29,7 +29,11 @@ export function TeamCompositionCard({ team, members, location, custom }: TeamCom
           </strong>
           <span>
             {location || "—"}
-            {custom ? " · Custom for this date" : " · Original team composition"}
+            {custom
+              ? members.length === 1
+                ? " · Assigned person for this date"
+                : " · Custom for this date"
+              : " · Original team composition"}
           </span>
         </div>
       </header>

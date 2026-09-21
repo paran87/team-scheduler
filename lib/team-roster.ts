@@ -2,6 +2,10 @@ import { TEAM_META } from "./schedule-data";
 import type { ActivityMember } from "./activity-notes";
 import type { TeamKey } from "./types";
 
+const TEAM_KEYS: TeamKey[] = ["usec", "b", "a"];
+
+export type RosterPerson = ActivityMember & { team: TeamKey };
+
 export type TeamPerson = {
   name: string;
   title: string;
@@ -94,4 +98,28 @@ export function baseActivityMembers(team: TeamKey | "special"): ActivityMember[]
       ...(member.photo ? { photo: member.photo } : {}),
     })),
   ];
+}
+
+export function toActivityMember(person: Pick<ActivityMember, "id" | "name" | "title" | "photo">): ActivityMember {
+  return {
+    id: person.id,
+    name: person.name,
+    ...(person.title ? { title: person.title } : {}),
+    ...(person.photo ? { photo: person.photo } : {}),
+  };
+}
+
+export function allRosterPeople(): RosterPerson[] {
+  return TEAM_KEYS.flatMap((team) =>
+    baseActivityMembers(team).map((member) => ({ ...member, team })),
+  );
+}
+
+export function findRosterPerson(id: string): RosterPerson | undefined {
+  return allRosterPeople().find((person) => person.id === id);
+}
+
+export function shortFirstName(name: string) {
+  const cleaned = name.replace(/^(Usec\.|Atty\.)\s+/i, "").trim();
+  return cleaned.split(/\s+/).filter(Boolean)[0] || name;
 }

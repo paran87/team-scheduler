@@ -4,8 +4,11 @@ import { useMemo } from "react";
 import type { ReactNode } from "react";
 import { daysInMonth, dotColor, isToday } from "@/lib/calendar";
 import { buildMonthlyReport } from "@/lib/monthly-report";
+import { findNote, toDateKey } from "@/lib/activity-notes";
+import { soloAssignee } from "@/lib/activity-composition";
 import { MONTH_NAMES, TEAM_META } from "@/lib/schedule-data";
 import { buildVisibleDayMap } from "@/lib/schedule-merge";
+import { shortFirstName } from "@/lib/team-roster";
 import type { ScheduleBlock, TeamKey } from "@/lib/types";
 import { useActivityNotes } from "./ActivityNotesProvider";
 
@@ -295,6 +298,14 @@ export function CalendarGrid({
                       {visible.map((entry, index) => {
                         const meta = TEAM_META[entry.team as TeamKey];
                         const span = spanLabel(entry, cell.day);
+                        const assigned =
+                          entry.team === "special"
+                            ? null
+                            : soloAssignee(findNote(notes, toDateKey(viewYear, viewMonth, cell.day), entry.team));
+                        const place = entry.place || entry.event || "Scheduled";
+                        const chipText = assigned
+                          ? [shortFirstName(assigned.name), entry.place || entry.event].filter(Boolean).join(" · ")
+                          : place;
                         return (
                           <div key={`${entry.team}-${index}`} className={`event-chip ${meta.chip}`}>
                             <span className="dot-sm" style={{ background: dotColor(entry.team) }} />
@@ -310,7 +321,7 @@ export function CalendarGrid({
                                 <PinIcon />
                               </span>
                             )}
-                            <span className="cal-chip-text">{entry.place || entry.event || "Scheduled"}</span>
+                            <span className="cal-chip-text">{chipText}</span>
                             {span ? <em className="cal-span">{span}</em> : null}
                           </div>
                         );

@@ -9,6 +9,7 @@ import { ActivityFields } from "./ActivityFields";
 import { useActivityNotes } from "./ActivityNotesProvider";
 import { findNote, activityReportPath, noteHasReport, toDateKey } from "@/lib/activity-notes";
 import { durationLabelForAssignment } from "@/lib/assignment-duration";
+import { soloAssignee } from "@/lib/activity-composition";
 
 type DetailPanelProps = {
   viewYear: number;
@@ -33,7 +34,7 @@ export function DetailPanel({
         <div className="empty-icon">🗓️</div>
         <h3 style={{ margin: 0 }}>Select a date</h3>
         <p style={{ color: "var(--muted)", fontSize: "13.5px", maxWidth: 260, margin: 0 }}>
-          Click on any date in the calendar to view team assignments, locations and events.
+          Click on any date in the calendar to view team or individual assignments, locations and events.
         </p>
       </aside>
     );
@@ -83,6 +84,7 @@ export function DetailPanel({
           const note = findNote(notes, dateKey, entry.team);
           const location = entry.place || note?.location;
           const placeImage = getPlaceImage(location);
+          const assigned = soloAssignee(note);
           const duration = durationLabelForAssignment(
             viewYear,
             viewMonth,
@@ -117,15 +119,17 @@ export function DetailPanel({
               </div>
               <div className="team-body">
                 <TeamLink team={entry.team} date={dateKey} className="team-name-row team-nav-link">
-                  <span className={`team-chip ${meta.chipSolid}`}>{meta.label}</span>
+                  <span className={`team-chip ${meta.chipSolid}`}>{assigned ? assigned.name : meta.label}</span>
                   <TeamAvatar teamKey={entry.team} size={40} />
                 </TeamLink>
+                {assigned ? <p className="team-place">{assigned.title || "Assigned"} · {meta.label}</p> : null}
                 <p className="team-place">{location}</p>
                 {entry.event && entry.event !== location ? <p className="team-event">{entry.event}</p> : null}
                 <ActivityFields
                   location={location}
                   duration={duration}
                   activity={entry.activity ?? note?.activity}
+                  assignedTo={assigned?.name}
                   reportHref={noteHasReport(note) ? activityReportPath(dateKey, entry.team) : undefined}
                 />
               </div>

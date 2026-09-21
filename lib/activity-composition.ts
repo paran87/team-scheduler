@@ -17,3 +17,8 @@ export function membersForDate(team: BlockTeam, dateKey: string, notes: Activity
   }
   return { members: baseActivityMembers(team), custom: false, note };
 }
+
+export function soloAssignee(note?: ActivityNote | null): ActivityMember | null {
+  if (note?.members?.length === 1) return note.members[0];
+  return null;
+}

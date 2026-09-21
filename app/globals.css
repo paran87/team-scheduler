@@ -2004,7 +2004,14 @@ footer {
   background: #f7f7fb;
   border: 1px solid var(--border);
 }
-.admin-empty-day p { margin: 0 0 8px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.admin-empty-day-picks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+@media (max-width: 720px) {
+  .admin-empty-day-picks { grid-template-columns: 1fr; }
+}
 .admin-edit-form { margin: 0; }
 .admin-team-card { margin-bottom: 0; }
 .admin-team-card.is-special .team-photo {

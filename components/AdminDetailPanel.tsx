@@ -24,8 +24,16 @@ import {
   resolveDuration,
 } from "@/lib/assignment-duration";
 import { MAX_REPORT_IMAGES } from "@/lib/activity-report-storage";
+import { soloAssignee } from "@/lib/activity-composition";
 import { DAY_NAMES, MONTH_NAMES, TEAM_META } from "@/lib/schedule-data";
-import { baseActivityMembers, personInitials } from "@/lib/team-roster";
+import {
+  allRosterPeople,
+  baseActivityMembers,
+  findRosterPerson,
+  personInitials,
+  shortFirstName,
+  toActivityMember,
+} from "@/lib/team-roster";
 import type { BlockTeam } from "@/lib/types";
 import { notifyActivityNotesChanged, useActivityNotes } from "./ActivityNotesProvider";
 import { TeamAvatar } from "./TeamAvatar";
@@ -127,9 +135,22 @@ function loadForm(dateKey: string, team: BlockTeam, notes: ActivityNote[]): Form
   };
 }
 
+const WHOLE_TEAM = "__team__";
+const rosterPeople = allRosterPeople();
+
 function membersForNote(team: BlockTeam, note?: ActivityNote) {
   if (note?.members?.length) return note.members.map((member) => ({ ...member }));
   return baseActivityMembers(team);
+}
+
+function assigneeIdFromNote(note?: ActivityNote) {
+  return note?.members?.length === 1 ? note.members[0].id : WHOLE_TEAM;
+}
+
+function memberFromAssignee(assigneeId: string): ActivityMember | null {
+  if (assigneeId === WHOLE_TEAM) return null;
+  const person = findRosterPerson(assigneeId);
+  return person ? toActivityMember(person) : null;
 }
 
 type DeleteActionsProps = {
@@ -169,6 +190,7 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [viewMode, setViewMode] = useState<"edit" | "composition">("edit");
   const [composition, setComposition] = useState<ActivityMember[]>([]);
+  const [assigneeId, setAssigneeId] = useState(WHOLE_TEAM);
   const [newMemberName, setNewMemberName] = useState("");
   const [newMemberTitle, setNewMemberTitle] = useState("Team Member");
   const [status, setStatus] = useState("");
@@ -195,6 +217,10 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
   const printed = dateKey ? scheduledBlock(dateKey, selectedTeam) : undefined;
   const availableTeams = TEAM_OPTIONS.filter((option) => !displayRows.some((row) => row.team === option.value));
   const usingCustomComposition = Boolean(selectedNote?.members?.length);
+  const assignedPerson =
+    memberFromAssignee(assigneeId) ??
+    (assigneeId !== WHOLE_TEAM ? composition.find((member) => member.id === assigneeId) ?? null : null);
+  const isSoloAssignment = Boolean(assignedPerson);
 
   useEffect(() => {
     if (!selectedDay) return;
@@ -205,6 +231,7 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
     setForm(loadForm(key, first, notes));
     setViewMode("edit");
     setComposition(membersForNote(first, findNote(notes, key, first)));
+    setAssigneeId(assigneeIdFromNote(findNote(notes, key, first)));
     setNewMemberName("");
     setNewMemberTitle("Team Member");
     setStatus("");
@@ -231,18 +258,50 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
     };
   }, [dateKey, selectedTeam]);
 
-  function selectTeam(team: BlockTeam, options?: { pending?: boolean; notes?: ActivityNote[] }) {
+  function selectTeam(
+    team: BlockTeam,
+    options?: { pending?: boolean; notes?: ActivityNote[]; assigneeId?: string },
+  ) {
     if (!dateKey) return;
     const source = options?.notes ?? notes;
+    const note = findNote(source, dateKey, team);
+    const nextAssignee = options?.assigneeId ?? assigneeIdFromNote(note);
+    const assigned = nextAssignee === WHOLE_TEAM ? null : memberFromAssignee(nextAssignee);
     setSelectedTeam(team);
     setPendingAdd(Boolean(options?.pending));
     setForm(loadForm(dateKey, team, source));
     setViewMode("edit");
-    setComposition(membersForNote(team, findNote(source, dateKey, team)));
+    setAssigneeId(nextAssignee);
+    setComposition(assigned ? [assigned] : membersForNote(team, note));
     setStatus("");
     setStatusError(false);
     setConfirmId(null);
     setRemoveConfirmTeam(null);
+  }
+
+  function assignPerson(personId: string) {
+    if (!personId || !dateKey) return;
+    const person = findRosterPerson(personId);
+    if (!person) return;
+    const alreadyListed = displayRows.some((row) => row.team === person.team);
+    selectTeam(person.team, { pending: !alreadyListed, assigneeId: person.id });
+  }
+
+  function onAssigneeChange(value: string) {
+    if (value === WHOLE_TEAM) {
+      setAssigneeId(WHOLE_TEAM);
+      setComposition(baseActivityMembers(selectedTeam));
+      return;
+    }
+    assignPerson(value);
+  }
+
+  function membersForSave(): ActivityMember[] | null | undefined {
+    if (assigneeId === WHOLE_TEAM) {
+      return selectedNote?.members?.length === 1 ? null : undefined;
+    }
+    const assigned = memberFromAssignee(assigneeId);
+    return assigned ? [assigned] : undefined;
   }
 
   function requestRemoveTeam(team: BlockTeam) {
@@ -475,6 +534,7 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
     setStatusError(false);
     try {
       const eventValue = selectedTeam === "special" ? form.event || form.location : form.event;
+      const members = membersForSave();
       let latestNotes: ActivityNote[] = notes;
       const parsed = parseDateKey(dateKey);
       const oldDays = parsed
@@ -497,6 +557,7 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
           reportImages: isSelectedDate ? form.reportImages : existing?.reportImages,
           event: eventValue,
           hidden: false,
+          ...(members !== undefined ? { members } : {}),
         });
         if (saved) latestNotes = saved;
       }
@@ -528,10 +589,11 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
       setPendingAdd(false);
       setForm((current) => ({ ...current, durationStart: span.start, durationEnd: span.end }));
       setStatusError(false);
+      const who = assignedPerson ? assignedPerson.name : teamLabel(selectedTeam);
       setStatus(
         keepDates.length === 1
-          ? `Saved for ${formatDurationLabel(span.start, span.end)}. The public dashboard will update now.`
-          : `Saved for ${formatDurationLabel(span.start, span.end)} (${keepDates.length} days). The public dashboard will update now.`,
+          ? `Saved ${who} for ${formatDurationLabel(span.start, span.end)}. The public dashboard will update now.`
+          : `Saved ${who} for ${formatDurationLabel(span.start, span.end)} (${keepDates.length} days). The public dashboard will update now.`,
       );
     } catch (error) {
       setStatusError(true);
@@ -572,7 +634,12 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
       }
       notifyActivityNotesChanged();
       setStatusError(false);
-      setStatus("Team composition saved for this date only. The original team roster is unchanged.");
+      setAssigneeId(cleaned.length === 1 ? cleaned[0].id : WHOLE_TEAM);
+      setStatus(
+        cleaned.length === 1
+          ? `${cleaned[0].name} is assigned for this date only. The original team roster is unchanged.`
+          : "Team composition saved for this date only. The original team roster is unchanged.",
+      );
       setViewMode("edit");
     } catch (error) {
       setStatusError(true);
@@ -661,7 +728,7 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
         <div className="empty-icon">✏️</div>
         <h3 style={{ margin: 0 }}>Select a date</h3>
         <p style={{ color: "var(--muted)", fontSize: "13.5px", maxWidth: 260, margin: 0 }}>
-          Click any date on the calendar to view and edit team assignments, activities, and the Activity Report/MOM.
+          Click any date on the calendar to view and edit team or individual assignments, activities, and the Activity Report/MOM.
         </p>
       </aside>
     );
@@ -694,10 +761,39 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
             ← Back to activity
           </button>
 
-          <h3 className="admin-composition-title">Team composition</h3>
+          <h3 className="admin-composition-title">{isSoloAssignment ? "Assigned person" : "Team composition"}</h3>
           <p className="admin-hint">
-            Edit who is assigned for this date only. The original {teamLabel(selectedTeam)} roster stays the same.
+            {isSoloAssignment
+              ? `Assign who is doing this activity on this date. The original ${teamLabel(selectedTeam)} roster stays the same.`
+              : `Edit who is assigned for this date only. The original ${teamLabel(selectedTeam)} roster stays the same.`}
           </p>
+
+          {selectedTeam !== "special" ? (
+            <label className="admin-field">
+              <span>Assign one person</span>
+              <select
+                className="admin-field-input"
+                value={composition.length === 1 ? composition[0].id : ""}
+                onChange={(event) => {
+                  const person = findRosterPerson(event.target.value);
+                  if (!person) return;
+                  if (person.team !== selectedTeam) {
+                    assignPerson(person.id);
+                    return;
+                  }
+                  setAssigneeId(person.id);
+                  setComposition([toActivityMember(person)]);
+                }}
+              >
+                <option value="">Choose a person…</option>
+                {rosterPeople.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {person.name} · {teamLabel(person.team)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
 
           <ul className="admin-member-list">
             {composition.length ? (
@@ -792,7 +888,13 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
             >
               <button type="button" className="admin-team-tab-select" onClick={() => selectTeam(row.team)}>
                 <span className="dot-sm" style={{ background: rowMeta.color }} />
-                {teamLabel(row.team)}
+                {(() => {
+                  const solo =
+                    row.team === selectedTeam && assignedPerson
+                      ? assignedPerson
+                      : soloAssignee(findNote(notes, dateKey, row.team));
+                  return solo ? `${teamLabel(row.team)} · ${shortFirstName(solo.name)}` : teamLabel(row.team);
+                })()}
               </button>
               <button
                 type="button"
@@ -824,6 +926,20 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
             ))}
           </select>
         ) : null}
+        <select
+          className="admin-team-add"
+          value=""
+          onChange={(event) => {
+            if (event.target.value) assignPerson(event.target.value);
+          }}
+        >
+          <option value="">+ Add person</option>
+          {rosterPeople.map((person) => (
+            <option key={person.id} value={person.id}>
+              {person.name} · {teamLabel(person.team)}
+            </option>
+          ))}
+        </select>
         {displayRows.length ? (
           <select
             className="admin-team-add admin-team-remove"
@@ -870,18 +986,38 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
 
       {!teamRows.length && !pendingAdd && availableTeams.length ? (
         <div className="admin-empty-day">
-          <p>No assignments on this date yet.</p>
-          <select
-            className="admin-field-input"
-            value={selectedTeam}
-            onChange={(event) => selectTeam(event.target.value as BlockTeam, { pending: true })}
-          >
-            {availableTeams.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          <p>No assignments on this date yet. Add a team or a single person.</p>
+          <div className="admin-empty-day-picks">
+            <select
+              className="admin-field-input"
+              value=""
+              onChange={(event) => {
+                const team = event.target.value as BlockTeam;
+                if (team) selectTeam(team, { pending: true });
+              }}
+            >
+              <option value="">Add a team…</option>
+              {availableTeams.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <select
+              className="admin-field-input"
+              value=""
+              onChange={(event) => {
+                if (event.target.value) assignPerson(event.target.value);
+              }}
+            >
+              <option value="">Add a person…</option>
+              {rosterPeople.map((person) => (
+                <option key={person.id} value={person.id}>
+                  {person.name} · {teamLabel(person.team)}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       ) : null}
 
@@ -905,7 +1041,7 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
                 onClick={openComposition}
                 title="Edit team composition for this date"
               >
-                {meta.label}
+                {isSoloAssignment && assignedPerson ? shortFirstName(assignedPerson.name) : meta.label}
               </button>
               {selectedTeam !== "special" ? (
                 <button type="button" className="admin-avatar-btn" onClick={openComposition} title="Edit team composition">
@@ -918,10 +1054,33 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
               )}
             </div>
             <button type="button" className="admin-composition-link" onClick={openComposition}>
-              {usingCustomComposition
-                ? `Custom composition · ${selectedNote?.members?.length ?? 0} members · Edit`
-                : "Edit team composition for this date"}
+              {isSoloAssignment
+                ? `${assignedPerson?.name} · assigned for this date · Edit`
+                : usingCustomComposition
+                  ? `Custom composition · ${selectedNote?.members?.length ?? 0} members · Edit`
+                  : "Edit team composition for this date"}
             </button>
+
+            {selectedTeam !== "special" ? (
+              <label className="admin-field">
+                <span>Assigned to</span>
+                <select
+                  className="admin-field-input"
+                  value={assigneeId}
+                  onChange={(event) => onAssigneeChange(event.target.value)}
+                >
+                  <option value={WHOLE_TEAM}>{teamLabel(selectedTeam)} (whole team)</option>
+                  {assignedPerson && !rosterPeople.some((person) => person.id === assignedPerson.id) ? (
+                    <option value={assignedPerson.id}>{assignedPerson.name}</option>
+                  ) : null}
+                  {rosterPeople.map((person) => (
+                    <option key={person.id} value={person.id}>
+                      {person.name} · {teamLabel(person.team)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
 
             {selectedNote?.hidden ? (
               <p className="admin-hint warn">This assignment is hidden. Saving will restore it to the public dashboard.</p>
@@ -977,7 +1136,7 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
               <textarea
                 className="admin-field-input"
                 rows={3}
-                placeholder="What did the team do?"
+                placeholder={isSoloAssignment ? "What did this person do?" : "What did the team do?"}
                 value={form.activity}
                 onChange={(event) => setForm((current) => ({ ...current, activity: event.target.value }))}
               />

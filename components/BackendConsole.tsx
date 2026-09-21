@@ -36,7 +36,7 @@ export function BackendConsole() {
     <ActivityNotesProvider>
       <AdminTopBar />
 
-      <Legend hint="Click any date to edit schedule" viewYear={viewYear} viewMonth={viewMonth} />
+      <Legend hint="Click any date to assign a team or a single person" viewYear={viewYear} viewMonth={viewMonth} />
 
       <main>
         <div className="page">
