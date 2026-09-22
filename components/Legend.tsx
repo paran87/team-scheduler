@@ -65,6 +65,9 @@ function TeamMemberDropdown({ team, label, dotColor, fieldDays, isOpen, onToggle
       </button>
 
       {isOpen && (
+        /* Invisible full-screen tap-to-close backdrop (mobile) */
+        <>
+        <div className="lmp-backdrop" onClick={onClose} aria-hidden="true" />
         <div className="legend-members-panel">
           <div className="lmp-header">
             <span className="lmp-title">{label}</span>
@@ -89,6 +92,7 @@ function TeamMemberDropdown({ team, label, dotColor, fieldDays, isOpen, onToggle
             ))}
           </ul>
         </div>
+        </>
       )}
     </div>
   );
