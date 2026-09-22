@@ -1,10 +1,11 @@
 -- Kept in sync with supabase/migrations/20260903140000_create_activity_notes.sql
+-- plus later migrations for members, report images, and independent (guest) people.
 -- Run this in the Supabase SQL Editor if the CLI cannot apply the migration.
 
 create table if not exists public.activity_notes (
   id text primary key,
   date text not null check (date ~ '^\d{4}-\d{2}-\d{2}$'),
-  team text not null check (team in ('usec', 'b', 'a', 'special')),
+  team text not null check (team in ('usec', 'b', 'a', 'special', 'guest')),
   location text not null default '',
   activity text not null default '',
   remarks text not null default '',

@@ -9,7 +9,7 @@ const BUCKET_MIME_TYPES = [...REPORT_IMAGE_TYPES, "application/json", "text/plai
 
 let bucketReady = false;
 
-function sanitizeFileName(name: string) {
+export function sanitizeFileName(name: string) {
   const trimmed = name.trim() || "photo";
   const lastDot = trimmed.lastIndexOf(".");
   const stem = (lastDot > 0 ? trimmed.slice(0, lastDot) : trimmed).replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");

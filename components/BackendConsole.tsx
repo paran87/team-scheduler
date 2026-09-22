@@ -34,6 +34,7 @@ export function BackendConsole() {
 
   return (
     <ActivityNotesProvider>
+      <div className="admin-console-wrap">
       <AdminTopBar />
 
       <Legend hint="Click any date to assign a team or a single person" viewYear={viewYear} viewMonth={viewMonth} />
@@ -67,6 +68,7 @@ export function BackendConsole() {
       </main>
 
       <div className={`backdrop${panelOpen ? " show" : ""}`} onClick={closePanel} role="presentation" />
+      </div>
     </ActivityNotesProvider>
   );
 }

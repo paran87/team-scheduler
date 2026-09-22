@@ -7,6 +7,7 @@ import { DAY_NAMES, MONTH_NAMES } from "@/lib/schedule-data";
 import { buildVisibleDayMap } from "@/lib/schedule-merge";
 import type { BlockTeam, ScheduleBlock } from "@/lib/types";
 import { useActivityNotes } from "./ActivityNotesProvider";
+import { useTeamRoster } from "./TeamRosterProvider";
 import { TeamCompositionCard } from "./TeamCompositionCard";
 
 type DayCompositionViewProps = {
@@ -22,6 +23,7 @@ function personnelCount(team: BlockTeam, dateKey: string, notes: ActivityNote[])
 
 export function DayCompositionView({ year, month, day, onBack }: DayCompositionViewProps) {
   const { notes } = useActivityNotes();
+  const { extras } = useTeamRoster();
   const dateKey = toDateKey(year, month, day);
   const dow = new Date(year, month, day).getDay();
 
@@ -52,7 +54,7 @@ export function DayCompositionView({ year, month, day, onBack }: DayCompositionV
       });
     }
     return list.sort((a, b) => a.team.localeCompare(b.team));
-  }, [dateKey, day, month, notes, year]);
+  }, [dateKey, day, extras, month, notes, year]);
 
   return (
     <div className="day-composition">

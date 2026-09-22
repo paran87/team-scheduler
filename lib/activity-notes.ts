@@ -1,4 +1,5 @@
 import { getBlocksForMonth } from "./calendar";
+import { TEAM_META } from "./schedule-data";
 import type { BlockTeam, ScheduleBlock, TeamKey } from "./types";
 
 export const ACTIVITY_CHANNEL = "activity-notes";
@@ -57,7 +58,11 @@ export function parseDateKey(date: string) {
 }
 
 export function isBlockTeam(value: string): value is BlockTeam {
-  return value === "usec" || value === "b" || value === "a" || value === "special";
+  return value === "usec" || value === "b" || value === "a" || value === "special" || value === "guest";
+}
+
+export function isStandaloneTeam(team: BlockTeam): team is "special" | "guest" {
+  return team === "special" || team === "guest";
 }
 
 export function noteId(date: string, team: BlockTeam) {
@@ -126,7 +131,35 @@ export const TEAM_OPTIONS: { value: BlockTeam; label: string }[] = [
   { value: "special", label: "Special Event" },
 ];
 
+export const PERSON_TEAM_OPTIONS: { value: BlockTeam; label: string }[] = [
+  { value: "guest", label: "No team" },
+  ...TEAM_OPTIONS,
+];
+
+export const SPECIAL_META = {
+  label: "Special Event",
+  chip: "chip-special",
+  chipSolid: "chip-special-solid",
+  photoClass: "photo-special",
+  color: "var(--special)",
+};
+
+export const GUEST_META = {
+  label: "No team",
+  chip: "chip-guest",
+  chipSolid: "chip-guest-solid",
+  photoClass: "photo-guest",
+  color: "var(--guest)",
+};
+
+export function blockTeamVisual(team: BlockTeam) {
+  if (team === "special") return SPECIAL_META;
+  if (team === "guest") return GUEST_META;
+  return TEAM_META[team];
+}
+
 export function teamLabel(team: BlockTeam | TeamKey) {
+  if (team === "guest") return GUEST_META.label;
   return TEAM_OPTIONS.find((option) => option.value === team)?.label ?? team;
 }
 

@@ -1,15 +1,16 @@
 "use client";
 
-import { DAY_NAMES, MONTH_NAMES, TEAM_META } from "@/lib/schedule-data";
+import { DAY_NAMES, MONTH_NAMES } from "@/lib/schedule-data";
 import { buildVisibleDayMap } from "@/lib/schedule-merge";
 import { getPlaceImage } from "@/lib/place-images";
 import { TeamAvatar } from "./TeamAvatar";
 import { TeamLink } from "./TeamLink";
 import { ActivityFields } from "./ActivityFields";
 import { useActivityNotes } from "./ActivityNotesProvider";
-import { findNote, activityReportPath, noteHasReport, toDateKey } from "@/lib/activity-notes";
+import { activityReportPath, blockTeamVisual, findNote, isStandaloneTeam, noteHasReport, toDateKey } from "@/lib/activity-notes";
 import { durationLabelForAssignment } from "@/lib/assignment-duration";
-import { soloAssignee } from "@/lib/activity-composition";
+import { assignedPeopleLabel, soloAssignee } from "@/lib/activity-composition";
+import { isTeamKey, personInitials } from "@/lib/team-roster";
 
 type DetailPanelProps = {
   viewYear: number;
@@ -80,11 +81,12 @@ export function DetailPanel({
       ) : entries.length ? (
         entries.map((entry, index) => {
           if (entry.team === "special") return null;
-          const meta = TEAM_META[entry.team];
+          const meta = blockTeamVisual(entry.team);
           const note = findNote(notes, dateKey, entry.team);
           const location = entry.place || note?.location;
           const placeImage = getPlaceImage(location);
           const assigned = soloAssignee(note);
+          const people = entry.team === "guest" ? assignedPeopleLabel(note) : assigned?.name;
           const duration = durationLabelForAssignment(
             viewYear,
             viewMonth,
@@ -119,8 +121,14 @@ export function DetailPanel({
               </div>
               <div className="team-body">
                 <TeamLink team={entry.team} date={dateKey} className="team-name-row team-nav-link">
-                  <span className={`team-chip ${meta.chipSolid}`}>{assigned ? assigned.name : meta.label}</span>
-                  <TeamAvatar teamKey={entry.team} size={40} />
+                  <span className={`team-chip ${meta.chipSolid}`}>{people || meta.label}</span>
+                  {isTeamKey(entry.team) ? (
+                    <TeamAvatar teamKey={entry.team} size={40} />
+                  ) : (
+                    <span className="admin-guest-mark">
+                      {assigned ? personInitials(assigned.name) : isStandaloneTeam(entry.team) ? "•" : meta.label.slice(0, 1)}
+                    </span>
+                  )}
                 </TeamLink>
                 {assigned ? <p className="team-place">{assigned.title || "Assigned"} · {meta.label}</p> : null}
                 <p className="team-place">{location}</p>
@@ -129,7 +137,7 @@ export function DetailPanel({
                   location={location}
                   duration={duration}
                   activity={entry.activity ?? note?.activity}
-                  assignedTo={assigned?.name}
+                  assignedTo={people}
                   reportHref={noteHasReport(note) ? activityReportPath(dateKey, entry.team) : undefined}
                 />
               </div>

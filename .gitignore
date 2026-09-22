@@ -37,3 +37,12 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# zip archives
+*.zip
+
+# supabase temp
+supabase/.temp/
+
+# whatsapp bridge (separate project)
+team-scheduler-whatsapp-bridge/

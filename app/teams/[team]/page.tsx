@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { BrandLogo } from "@/components/BrandLogo";
-import { OrgChart } from "@/components/OrgChart";
+import { TeamCompositionBoard } from "@/components/TeamCompositionBoard";
 import { OFFICE_NAME, TEAM_ROSTERS, isTeamKey } from "@/lib/team-roster";
 import { TEAM_META } from "@/lib/schedule-data";
 import type { TeamKey } from "@/lib/types";
@@ -62,7 +62,7 @@ export default async function TeamPage({ params }: TeamPageProps) {
           <p>Organizational chart of personnel assigned to {roster.label}.</p>
         </div>
 
-        <OrgChart roster={roster} />
+        <TeamCompositionBoard team={team} />
 
         <nav className="org-other-teams" aria-label="Other teams">
           {otherTeams.map((key) => (

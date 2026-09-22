@@ -1,5 +1,5 @@
 export type TeamKey = "usec" | "b" | "a";
-export type BlockTeam = TeamKey | "special";
+export type BlockTeam = TeamKey | "special" | "guest";
 export type TabName = "dashboard" | "calendar" | "activity" | "reports";
 export type TeamFilter = TeamKey | "all";
 

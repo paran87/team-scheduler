@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { MONTH_NAMES, TEAM_META } from "@/lib/schedule-data";
-import { teamLabel } from "@/lib/activity-notes";
+import { blockTeamVisual, teamLabel } from "@/lib/activity-notes";
 import { buildMonthlyReport, type ReportFilter } from "@/lib/monthly-report";
 import { useActivityNotes } from "./ActivityNotesProvider";
 import { TeamAssignmentPanel } from "./TeamAssignmentPanel";
@@ -165,12 +165,12 @@ export function ReportsPanel({ viewYear, viewMonth, onPrevMonth, onNextMonth }: 
               </thead>
               <tbody>
                 {rows.map((row) => {
-                  const meta = TEAM_META[row.team];
+                  const visual = blockTeamVisual(row.team);
                   return (
                     <tr key={row.key}>
                       <td className="overview-time">{row.duration}</td>
                       <td>
-                        <span className="overview-team" style={{ background: meta.color }}>
+                        <span className="overview-team" style={{ background: visual.color }}>
                           {teamLabel(row.team)}
                         </span>
                       </td>
@@ -221,7 +221,7 @@ export function ReportsPanel({ viewYear, viewMonth, onPrevMonth, onNextMonth }: 
                     <td>
                       <span className="reports-team-pills">
                         {row.teams.map((team) => (
-                          <span key={team} className="overview-team" style={{ background: TEAM_META[team].color }}>
+                          <span key={team} className="overview-team" style={{ background: blockTeamVisual(team).color }}>
                             {teamLabel(team)}
                           </span>
                         ))}

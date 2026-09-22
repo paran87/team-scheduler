@@ -4,10 +4,13 @@ import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "
 import { getBlocksForMonth } from "@/lib/calendar";
 import {
   activityReportPath,
+  blockTeamVisual,
   findNote,
   isPrintedAssignment,
+  isStandaloneTeam,
   noteId,
   parseDateKey,
+  PERSON_TEAM_OPTIONS,
   scheduledBlock,
   TEAM_OPTIONS,
   teamLabel,
@@ -25,7 +28,7 @@ import {
 } from "@/lib/assignment-duration";
 import { MAX_REPORT_IMAGES } from "@/lib/activity-report-storage";
 import { soloAssignee } from "@/lib/activity-composition";
-import { DAY_NAMES, MONTH_NAMES, TEAM_META } from "@/lib/schedule-data";
+import { DAY_NAMES, MONTH_NAMES } from "@/lib/schedule-data";
 import {
   allRosterPeople,
   baseActivityMembers,
@@ -36,6 +39,7 @@ import {
 } from "@/lib/team-roster";
 import type { BlockTeam } from "@/lib/types";
 import { notifyActivityNotesChanged, useActivityNotes } from "./ActivityNotesProvider";
+import { useTeamRoster } from "./TeamRosterProvider";
 import { TeamAvatar } from "./TeamAvatar";
 
 type AdminDetailPanelProps = {
@@ -84,15 +88,8 @@ function formatDurationLabel(start: string, end: string) {
   return `${fromText} – ${MONTH_NAMES[to.monthIndex].slice(0, 3)} ${to.day}`;
 }
 
-const SPECIAL_META = {
-  label: "Special Event",
-  chipSolid: "chip-special-solid",
-  photoClass: "photo-special",
-  color: "var(--special)",
-};
-
 function blockTeamMeta(team: BlockTeam) {
-  return team === "special" ? SPECIAL_META : TEAM_META[team];
+  return blockTeamVisual(team);
 }
 
 function getTeamsForDate(dateKey: string, year: number, month: number, notes: ActivityNote[]): TeamRow[] {
@@ -136,7 +133,6 @@ function loadForm(dateKey: string, team: BlockTeam, notes: ActivityNote[]): Form
 }
 
 const WHOLE_TEAM = "__team__";
-const rosterPeople = allRosterPeople();
 
 function membersForNote(team: BlockTeam, note?: ActivityNote) {
   if (note?.members?.length) return note.members.map((member) => ({ ...member }));
@@ -151,6 +147,91 @@ function memberFromAssignee(assigneeId: string): ActivityMember | null {
   if (assigneeId === WHOLE_TEAM) return null;
   const person = findRosterPerson(assigneeId);
   return person ? toActivityMember(person) : null;
+}
+
+function createCustomMember(name: string, title = "Team Member"): ActivityMember {
+  return {
+    id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name: name.trim(),
+    title: title.trim() || "Team Member",
+  };
+}
+
+function findRosterByName(name: string) {
+  const needle = name.trim().toLowerCase();
+  return allRosterPeople().find((person) => person.name.toLowerCase() === needle);
+}
+
+type ManualMemberFormProps = {
+  name: string;
+  team: BlockTeam;
+  showTeam?: boolean;
+  addLabel?: string;
+  onNameChange: (value: string) => void;
+  onTeamChange?: (team: BlockTeam) => void;
+  onAdd: () => void;
+  onCancel?: () => void;
+};
+
+function ManualMemberForm({
+  name,
+  team,
+  showTeam = true,
+  addLabel = "Add",
+  onNameChange,
+  onTeamChange,
+  onAdd,
+  onCancel,
+}: ManualMemberFormProps) {
+  return (
+    <div className="admin-manual-add">
+      <p className="admin-manual-add-title">Add by name</p>
+      <p className="admin-hint">Type any name. Choose No team if they are not on Team USEC, B, or A.</p>
+      <div className={`admin-manual-add-row${showTeam ? " has-team" : ""}`}>
+        <label className="admin-field">
+          <span>Member name</span>
+          <input
+            type="text"
+            className="admin-field-input"
+            placeholder="Full name"
+            value={name}
+            onChange={(event) => onNameChange(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter") return;
+              event.preventDefault();
+              onAdd();
+            }}
+          />
+        </label>
+        {showTeam ? (
+          <label className="admin-field">
+            <span>Team</span>
+            <select
+              className="admin-field-input"
+              value={team}
+              onChange={(event) => onTeamChange?.(event.target.value as BlockTeam)}
+            >
+              {PERSON_TEAM_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+        <div className="admin-manual-add-actions">
+          <button type="button" className="admin-btn admin-btn-primary" disabled={!name.trim()} onClick={onAdd}>
+            {addLabel}
+          </button>
+          {onCancel ? (
+            <button type="button" className="admin-btn admin-btn-muted" onClick={onCancel}>
+              Cancel
+            </button>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 type DeleteActionsProps = {
@@ -186,6 +267,7 @@ function DeleteActions({ id, label, confirmId, deletingId, onConfirm, onRequest,
 
 export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClose }: AdminDetailPanelProps) {
   const { notes, refresh, replaceNotes } = useActivityNotes();
+  const { people: rosterPeople } = useTeamRoster();
   const [selectedTeam, setSelectedTeam] = useState<BlockTeam>("usec");
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [viewMode, setViewMode] = useState<"edit" | "composition">("edit");
@@ -193,6 +275,9 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
   const [assigneeId, setAssigneeId] = useState(WHOLE_TEAM);
   const [newMemberName, setNewMemberName] = useState("");
   const [newMemberTitle, setNewMemberTitle] = useState("Team Member");
+  const [showManualAdd, setShowManualAdd] = useState(false);
+  const [manualName, setManualName] = useState("");
+  const [manualTeam, setManualTeam] = useState<BlockTeam>("guest");
   const [status, setStatus] = useState("");
   const [statusError, setStatusError] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -221,12 +306,14 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
     memberFromAssignee(assigneeId) ??
     (assigneeId !== WHOLE_TEAM ? composition.find((member) => member.id === assigneeId) ?? null : null);
   const isSoloAssignment = Boolean(assignedPerson);
+  const isStandalone = isStandaloneTeam(selectedTeam);
+  const isEmptyDay = !teamRows.length && !pendingAdd && availableTeams.length > 0;
 
   useEffect(() => {
     if (!selectedDay) return;
     const key = toDateKey(viewYear, viewMonth, selectedDay);
     const rows = getTeamsForDate(key, viewYear, viewMonth, notes);
-    const first = rows[0]?.team ?? "usec";
+    const first = rows[0]?.team ?? "guest";
     setSelectedTeam(first);
     setForm(loadForm(key, first, notes));
     setViewMode("edit");
@@ -234,6 +321,9 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
     setAssigneeId(assigneeIdFromNote(findNote(notes, key, first)));
     setNewMemberName("");
     setNewMemberTitle("Team Member");
+    setShowManualAdd(false);
+    setManualName("");
+    setManualTeam(rows[0]?.team ?? "guest");
     setStatus("");
     setStatusError(false);
     setConfirmId(null);
@@ -283,25 +373,88 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
     if (!personId || !dateKey) return;
     const person = findRosterPerson(personId);
     if (!person) return;
-    const alreadyListed = displayRows.some((row) => row.team === person.team);
-    selectTeam(person.team, { pending: !alreadyListed, assigneeId: person.id });
+    const alreadySaved = teamRows.some((row) => row.team === person.team);
+    selectTeam(person.team, { pending: !alreadySaved, assigneeId: person.id });
+  }
+
+  function assignNamedPerson(name: string, team: BlockTeam) {
+    const trimmed = name.trim();
+    if (!trimmed || !dateKey) return;
+    const rosterMatch = team === "guest" ? undefined : findRosterByName(trimmed);
+    if (rosterMatch) {
+      assignPerson(rosterMatch.id);
+      setManualName("");
+      setShowManualAdd(false);
+      return;
+    }
+    const rosterPhoto = findRosterByName(trimmed);
+    const member = rosterPhoto
+      ? {
+          ...createCustomMember(trimmed, rosterPhoto.title || (team === "guest" ? "Independent" : "Team Member")),
+          ...(rosterPhoto.photo ? { photo: rosterPhoto.photo } : {}),
+        }
+      : createCustomMember(trimmed, team === "guest" ? "Independent" : "Team Member");
+    const guestAlreadyOnDate = team === "guest" && displayRows.some((row) => row.team === "guest");
+    if (guestAlreadyOnDate) {
+      const guestNote = findNote(notes, dateKey, "guest");
+      const currentGuest = selectedTeam === "guest" ? composition : membersForNote("guest", guestNote);
+      setSelectedTeam("guest");
+      setPendingAdd(!teamRows.some((row) => row.team === "guest"));
+      setForm(loadForm(dateKey, "guest", notes));
+      setViewMode("edit");
+      const next = currentGuest.some((existing) => existing.name.toLowerCase() === member.name.toLowerCase())
+        ? currentGuest
+        : [...currentGuest, member];
+      setComposition(next);
+      setAssigneeId(next.length === 1 ? next[0].id : WHOLE_TEAM);
+      setManualName("");
+      setShowManualAdd(false);
+      setStatus("");
+      setStatusError(false);
+      setConfirmId(null);
+      setRemoveConfirmTeam(null);
+      return;
+    }
+    const alreadySaved = teamRows.some((row) => row.team === team);
+    setSelectedTeam(team);
+    setPendingAdd(!alreadySaved);
+    setForm(loadForm(dateKey, team, notes));
+    setViewMode("edit");
+    setAssigneeId(member.id);
+    setComposition([member]);
+    setManualName("");
+    setShowManualAdd(false);
+    setStatus("");
+    setStatusError(false);
+    setConfirmId(null);
+    setRemoveConfirmTeam(null);
   }
 
   function onAssigneeChange(value: string) {
     if (value === WHOLE_TEAM) {
       setAssigneeId(WHOLE_TEAM);
-      setComposition(baseActivityMembers(selectedTeam));
+      if (selectedTeam !== "guest") setComposition(baseActivityMembers(selectedTeam));
       return;
     }
     assignPerson(value);
   }
 
   function membersForSave(): ActivityMember[] | null | undefined {
+    if (selectedTeam === "guest") {
+      const cleaned = composition
+        .map((member) => ({
+          ...member,
+          name: member.name.trim(),
+          title: member.title?.trim() || undefined,
+        }))
+        .filter((member) => member.name);
+      return cleaned.length ? cleaned : null;
+    }
     if (assigneeId === WHOLE_TEAM) {
       return selectedNote?.members?.length === 1 ? null : undefined;
     }
-    const assigned = memberFromAssignee(assigneeId);
-    return assigned ? [assigned] : undefined;
+    if (assignedPerson) return [assignedPerson];
+    return undefined;
   }
 
   function requestRemoveTeam(team: BlockTeam) {
@@ -529,12 +682,18 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
       return;
     }
 
+    const members = membersForSave();
+    if (selectedTeam === "guest" && !members?.length) {
+      setStatusError(true);
+      setStatus("Add a person's name before saving someone who is not on a team.");
+      return;
+    }
+
     setSaving(true);
     setStatus("");
     setStatusError(false);
     try {
       const eventValue = selectedTeam === "special" ? form.event || form.location : form.event;
-      const members = membersForSave();
       let latestNotes: ActivityNote[] = notes;
       const parsed = parseDateKey(dateKey);
       const oldDays = parsed
@@ -617,6 +776,9 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
           title: member.title?.trim() || undefined,
         }))
         .filter((member) => member.name);
+      if (selectedTeam === "guest" && !cleaned.length) {
+        throw new Error("Add at least one person who is not on a team.");
+      }
       const latestNotes = await saveEntry({
         date: dateKey,
         team: selectedTeam,
@@ -652,14 +814,14 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
   function addMember() {
     const name = newMemberName.trim();
     if (!name) return;
-    setComposition((current) => [
-      ...current,
-      {
-        id: `custom-${Date.now()}`,
-        name,
-        title: newMemberTitle.trim() || "Team Member",
-      },
-    ]);
+    const rosterMatch = findRosterByName(name);
+    const member = rosterMatch ? toActivityMember(rosterMatch) : createCustomMember(name, newMemberTitle);
+    setComposition((current) => {
+      if (current.some((existing) => existing.id === member.id || existing.name.toLowerCase() === member.name.toLowerCase())) {
+        return current;
+      }
+      return [...current, member];
+    });
     setNewMemberName("");
     setNewMemberTitle("Team Member");
   }
@@ -761,16 +923,20 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
             ← Back to activity
           </button>
 
-          <h3 className="admin-composition-title">{isSoloAssignment ? "Assigned person" : "Team composition"}</h3>
+          <h3 className="admin-composition-title">
+            {selectedTeam === "guest" ? "People without a team" : isSoloAssignment ? "Assigned person" : "Team composition"}
+          </h3>
           <p className="admin-hint">
-            {isSoloAssignment
-              ? `Assign who is doing this activity on this date. The original ${teamLabel(selectedTeam)} roster stays the same.`
-              : `Edit who is assigned for this date only. The original ${teamLabel(selectedTeam)} roster stays the same.`}
+            {selectedTeam === "guest"
+              ? "These people are assigned to this activity only. They are not added to Team USEC, B, or A."
+              : isSoloAssignment
+                ? `Assign who is doing this activity on this date. The original ${teamLabel(selectedTeam)} roster stays the same.`
+                : `Edit who is assigned for this date only. The original ${teamLabel(selectedTeam)} roster stays the same.`}
           </p>
 
-          {selectedTeam !== "special" ? (
+          {!isStandalone ? (
             <label className="admin-field">
-              <span>Assign one person</span>
+              <span>Assign one listed person</span>
               <select
                 className="admin-field-input"
                 value={composition.length === 1 ? composition[0].id : ""}
@@ -821,13 +987,18 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
 
           <div className="admin-member-add">
             <label className="admin-field">
-              <span>Add member</span>
+              <span>Add member by name</span>
               <input
                 type="text"
                 className="admin-field-input"
-                placeholder="Full name"
+                placeholder="Type a name not on the default list"
                 value={newMemberName}
                 onChange={(event) => setNewMemberName(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter") return;
+                  event.preventDefault();
+                  addMember();
+                }}
               />
             </label>
             <label className="admin-field">
@@ -889,10 +1060,16 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
               <button type="button" className="admin-team-tab-select" onClick={() => selectTeam(row.team)}>
                 <span className="dot-sm" style={{ background: rowMeta.color }} />
                 {(() => {
+                  const note = findNote(notes, dateKey, row.team);
+                  const people = row.team === selectedTeam ? composition : note?.members ?? [];
+                  if (row.team === "guest") {
+                    const names = people.map((member) => shortFirstName(member.name)).filter(Boolean);
+                    return names.length ? `${teamLabel(row.team)} · ${names.join(", ")}` : teamLabel(row.team);
+                  }
                   const solo =
                     row.team === selectedTeam && assignedPerson
                       ? assignedPerson
-                      : soloAssignee(findNote(notes, dateKey, row.team));
+                      : soloAssignee(note);
                   return solo ? `${teamLabel(row.team)} · ${shortFirstName(solo.name)}` : teamLabel(row.team);
                 })()}
               </button>
@@ -940,6 +1117,16 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          className={`admin-team-add${showManualAdd ? " is-open" : ""}`}
+          onClick={() => {
+            setManualTeam("guest");
+            setShowManualAdd((current) => !current);
+          }}
+        >
+          + Add by name
+        </button>
         {displayRows.length ? (
           <select
             className="admin-team-add admin-team-remove"
@@ -959,6 +1146,21 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
           </select>
         ) : null}
       </div>
+
+      {showManualAdd && !isEmptyDay ? (
+        <ManualMemberForm
+          name={manualName}
+          team={manualTeam}
+          addLabel="Add person"
+          onNameChange={setManualName}
+          onTeamChange={setManualTeam}
+          onAdd={() => assignNamedPerson(manualName, manualTeam)}
+          onCancel={() => {
+            setShowManualAdd(false);
+            setManualName("");
+          }}
+        />
+      ) : null}
 
       {removeConfirmTeam ? (
         <div className="admin-remove-confirm">
@@ -984,9 +1186,9 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
         </div>
       ) : null}
 
-      {!teamRows.length && !pendingAdd && availableTeams.length ? (
+      {isEmptyDay ? (
         <div className="admin-empty-day">
-          <p>No assignments on this date yet. Add a team or a single person.</p>
+          <p>No assignments on this date yet. Add a team, pick a listed person, or type a name without assigning a team.</p>
           <div className="admin-empty-day-picks">
             <select
               className="admin-field-input"
@@ -1010,7 +1212,7 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
                 if (event.target.value) assignPerson(event.target.value);
               }}
             >
-              <option value="">Add a person…</option>
+              <option value="">Add a listed person…</option>
               {rosterPeople.map((person) => (
                 <option key={person.id} value={person.id}>
                   {person.name} · {teamLabel(person.team)}
@@ -1018,11 +1220,19 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
               ))}
             </select>
           </div>
+          <ManualMemberForm
+            name={manualName}
+            team={manualTeam}
+            addLabel="Add person"
+            onNameChange={setManualName}
+            onTeamChange={setManualTeam}
+            onAdd={() => assignNamedPerson(manualName, manualTeam)}
+          />
         </div>
       ) : null}
 
       <form className="admin-edit-form" onSubmit={onSubmit}>
-        <div className={`team-card admin-team-card${selectedTeam === "special" ? " is-special" : ""}`}>
+        <div className={`team-card admin-team-card${selectedTeam === "special" ? " is-special" : ""}${selectedTeam === "guest" ? " is-guest" : ""}`}>
           <div className={`team-photo ${meta.photoClass}`}>
             <div className="overlay" />
             <div>
@@ -1037,15 +1247,28 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
               <button
                 type="button"
                 className={`team-chip admin-team-chip-btn ${meta.chipSolid}`}
-                style={selectedTeam === "special" ? { background: "var(--special)" } : undefined}
+                style={isStandalone ? { background: meta.color } : undefined}
                 onClick={openComposition}
                 title="Edit team composition for this date"
               >
-                {isSoloAssignment && assignedPerson ? shortFirstName(assignedPerson.name) : meta.label}
+                {isSoloAssignment && assignedPerson
+                  ? shortFirstName(assignedPerson.name)
+                  : selectedTeam === "guest" && composition.length
+                    ? composition.map((member) => shortFirstName(member.name)).join(", ")
+                    : meta.label}
               </button>
-              {selectedTeam !== "special" ? (
+              {!isStandalone ? (
                 <button type="button" className="admin-avatar-btn" onClick={openComposition} title="Edit team composition">
                   <TeamAvatar teamKey={selectedTeam} size={36} />
+                </button>
+              ) : selectedTeam === "guest" ? (
+                <button type="button" className="admin-avatar-btn" onClick={openComposition} title="Edit assigned people">
+                  {assignedPerson?.photo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={assignedPerson.photo} alt="" className="admin-guest-photo" />
+                  ) : (
+                    <span className="admin-guest-mark">{assignedPerson ? personInitials(assignedPerson.name) : "•"}</span>
+                  )}
                 </button>
               ) : (
                 <button type="button" className="admin-avatar-btn" onClick={openComposition} title="Edit team composition">
@@ -1054,31 +1277,88 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
               )}
             </div>
             <button type="button" className="admin-composition-link" onClick={openComposition}>
-              {isSoloAssignment
-                ? `${assignedPerson?.name} · assigned for this date · Edit`
-                : usingCustomComposition
-                  ? `Custom composition · ${selectedNote?.members?.length ?? 0} members · Edit`
-                  : "Edit team composition for this date"}
+              {selectedTeam === "guest"
+                ? `${composition.length || 0} independent ${composition.length === 1 ? "person" : "people"} · Edit`
+                : isSoloAssignment
+                  ? `${assignedPerson?.name} · assigned for this date · Edit`
+                  : usingCustomComposition
+                    ? `Custom composition · ${selectedNote?.members?.length ?? 0} members · Edit`
+                    : "Edit team composition for this date"}
             </button>
 
-            {selectedTeam !== "special" ? (
+            {!isStandalone ? (
+              <div className="admin-assignee-block">
+                <label className="admin-field">
+                  <span>Assigned to</span>
+                  <select
+                    className="admin-field-input"
+                    value={assigneeId}
+                    onChange={(event) => onAssigneeChange(event.target.value)}
+                  >
+                    <option value={WHOLE_TEAM}>{teamLabel(selectedTeam)} (whole team)</option>
+                    {assignedPerson && !rosterPeople.some((person) => person.id === assignedPerson.id) ? (
+                      <option value={assignedPerson.id}>{assignedPerson.name}</option>
+                    ) : null}
+                    {rosterPeople.map((person) => (
+                      <option key={person.id} value={person.id}>
+                        {person.name} · {teamLabel(person.team)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {!isEmptyDay ? (
+                  <label className="admin-field">
+                    <span>Or type a name</span>
+                    <div className="admin-manual-inline">
+                      <input
+                        type="text"
+                        className="admin-field-input"
+                        placeholder="Add someone not on the default list"
+                        value={manualName}
+                        onChange={(event) => setManualName(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key !== "Enter") return;
+                          event.preventDefault();
+                          assignNamedPerson(manualName, selectedTeam);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="admin-btn admin-btn-muted"
+                        disabled={!manualName.trim()}
+                        onClick={() => assignNamedPerson(manualName, selectedTeam)}
+                      >
+                        Assign
+                      </button>
+                    </div>
+                  </label>
+                ) : null}
+              </div>
+            ) : !isEmptyDay ? (
               <label className="admin-field">
-                <span>Assigned to</span>
-                <select
-                  className="admin-field-input"
-                  value={assigneeId}
-                  onChange={(event) => onAssigneeChange(event.target.value)}
-                >
-                  <option value={WHOLE_TEAM}>{teamLabel(selectedTeam)} (whole team)</option>
-                  {assignedPerson && !rosterPeople.some((person) => person.id === assignedPerson.id) ? (
-                    <option value={assignedPerson.id}>{assignedPerson.name}</option>
-                  ) : null}
-                  {rosterPeople.map((person) => (
-                    <option key={person.id} value={person.id}>
-                      {person.name} · {teamLabel(person.team)}
-                    </option>
-                  ))}
-                </select>
+                <span>Add member by name</span>
+                <div className="admin-manual-inline">
+                  <input
+                    type="text"
+                    className="admin-field-input"
+                    placeholder="Add someone not on the default list"
+                    value={manualName}
+                    onChange={(event) => setManualName(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter") return;
+                      event.preventDefault();
+                      assignNamedPerson(manualName, selectedTeam);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="admin-btn admin-btn-muted"
+                    disabled={!manualName.trim()}
+                    onClick={() => assignNamedPerson(manualName, selectedTeam)}
+                  >
+                    Assign
+                  </button>
+                </div>
               </label>
             ) : null}
 
@@ -1125,7 +1405,13 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
               <input
                 type="text"
                 className="admin-field-input"
-                placeholder={selectedTeam === "special" ? "Special event name" : "Optional event line"}
+                    placeholder={
+                      selectedTeam === "special"
+                        ? "Special event name"
+                        : selectedTeam === "guest"
+                          ? "Optional title for this person"
+                          : "Optional event line"
+                    }
                 value={form.event}
                 onChange={(event) => setForm((current) => ({ ...current, event: event.target.value }))}
               />
@@ -1136,7 +1422,9 @@ export function AdminDetailPanel({ viewYear, viewMonth, selectedDay, open, onClo
               <textarea
                 className="admin-field-input"
                 rows={3}
-                placeholder={isSoloAssignment ? "What did this person do?" : "What did the team do?"}
+                placeholder={
+                  selectedTeam === "guest" || isSoloAssignment ? "What did this person do?" : "What did the team do?"
+                }
                 value={form.activity}
                 onChange={(event) => setForm((current) => ({ ...current, activity: event.target.value }))}
               />

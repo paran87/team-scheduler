@@ -1,18 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { MONTH_NAMES, TEAM_META } from "@/lib/schedule-data";
+import { MONTH_NAMES } from "@/lib/schedule-data";
 import { activityId, dotColor } from "@/lib/calendar";
 import { getVisibleBlocks } from "@/lib/schedule-merge";
 import { TeamAvatar } from "./TeamAvatar";
 import { TeamLink } from "./TeamLink";
 import { ActivityFields } from "./ActivityFields";
 import { useActivityNotes } from "./ActivityNotesProvider";
-import { activityReportPath, findNote, noteHasReport, notesForBlock, toDateKey } from "@/lib/activity-notes";
+import { activityReportPath, blockTeamVisual, findNote, noteHasReport, notesForBlock, toDateKey } from "@/lib/activity-notes";
 import { durationLabelForAssignment } from "@/lib/assignment-duration";
-import type { BlockTeam, TeamKey } from "@/lib/types";
+import { assignedPeopleLabel } from "@/lib/activity-composition";
+import { isTeamKey, personInitials } from "@/lib/team-roster";
+import type { BlockTeam } from "@/lib/types";
 
-type ActivityFilter = "all" | TeamKey | "special";
+type ActivityFilter = "all" | BlockTeam;
 
 type ActivityTimelineProps = {
   viewYear: number;
@@ -27,6 +29,7 @@ const FILTERS: Array<{ id: ActivityFilter; label: string }> = [
   { id: "usec", label: "Team USEC" },
   { id: "b", label: "Team B" },
   { id: "a", label: "Team A" },
+  { id: "guest", label: "No team" },
   { id: "special", label: "Specials" },
 ];
 
@@ -129,8 +132,9 @@ export function ActivityTimeline({
               className={`activity-filter${filter === item.id ? " is-on" : ""}`}
               onClick={() => setFilter(item.id)}
             >
-              {item.id !== "all" && item.id !== "special" ? <TeamAvatar teamKey={item.id} size={22} /> : null}
+              {item.id !== "all" && isTeamKey(item.id) ? <TeamAvatar teamKey={item.id} size={22} /> : null}
               {item.id === "special" ? <i className="activity-filter-dot" style={{ background: "var(--special)" }} /> : null}
+              {item.id === "guest" ? <i className="activity-filter-dot" style={{ background: "var(--guest)" }} /> : null}
               {item.id === "all" ? <i className="activity-filter-dot is-all" /> : null}
               {item.label}
             </button>
@@ -186,9 +190,10 @@ export function ActivityTimeline({
               );
             }
 
-            const meta = TEAM_META[block.team];
+            const meta = blockTeamVisual(block.team);
             const id = activityId(block);
             const focused = focusId === id;
+            const people = assignedPeopleLabel(startNote);
 
             return (
               <div key={id} id={`activity-${id}`} className={`timeline-item team-${block.team}`}>
@@ -200,12 +205,14 @@ export function ActivityTimeline({
                   <div className="activity-left">
                     <div className="activity-date-badge">{rangeLabel}</div>
                     <div className="activity-info">
-                      <p className="place">{block.place || fields.location}</p>
+                      <p className="place">{block.place || fields.location || people || meta.label}</p>
                       {block.event && block.event !== block.place ? <p className="note">{block.event}</p> : null}
+                      {people && block.team === "guest" ? <p className="note">{people}</p> : null}
                       <ActivityFields
                         location={block.place || fields.location}
                         duration={durationLabelForAssignment(viewYear, viewMonth, block.start, block.team, notes, block.start, block.end)}
                         activity={block.activity ?? fields.activity}
+                        assignedTo={people || undefined}
                         reportHref={noteHasReport(startNote) ? activityReportPath(startDateKey, block.team) : undefined}
                       />
                     </div>
@@ -213,9 +220,13 @@ export function ActivityTimeline({
                   <TeamLink team={block.team} date={toDateKey(viewYear, viewMonth, block.start)} className="team-nav-link">
                     <span className="activity-team">
                       <span className="activity-team-chip" style={{ background: meta.color }}>
-                        {meta.label}
+                        {block.team === "guest" && people ? people : meta.label}
                       </span>
-                      <TeamAvatar teamKey={block.team} size={36} />
+                      {isTeamKey(block.team) ? (
+                        <TeamAvatar teamKey={block.team} size={36} />
+                      ) : (
+                        <span className="admin-guest-mark">{people ? personInitials(people) : "•"}</span>
+                      )}
                     </span>
                   </TeamLink>
                 </div>

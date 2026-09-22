@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { findNote, teamLabel, toDateKey } from "@/lib/activity-notes";
+import { findNote, teamLabel, toDateKey, blockTeamVisual } from "@/lib/activity-notes";
 import { dotColor, shiftMonth } from "@/lib/calendar";
 import { buildMonthlyReport } from "@/lib/monthly-report";
-import { DAY_NAMES, MONTH_NAMES, TEAM_META } from "@/lib/schedule-data";
+import { DAY_NAMES, MONTH_NAMES } from "@/lib/schedule-data";
 import { buildVisibleDayMap, getVisibleBlocks } from "@/lib/schedule-merge";
 import type { BlockTeam, ScheduleBlock } from "@/lib/types";
 import { useActivityNotes } from "./ActivityNotesProvider";
@@ -489,7 +489,7 @@ export function OverviewDashboard({
               </thead>
               <tbody>
                 {rows.map((row) => {
-                  const meta = row.team === "special" ? null : TEAM_META[row.team];
+                  const visual = blockTeamVisual(row.team);
                   const note = findNote(notes, dateKey, row.team);
                   return (
                     <tr key={row.key}>
@@ -499,7 +499,7 @@ export function OverviewDashboard({
                       <td>
                         <span
                           className="overview-team"
-                          style={{ background: meta?.color ?? "var(--special)" }}
+                          style={{ background: visual.color }}
                         >
                           {teamLabel(row.team)}
                         </span>

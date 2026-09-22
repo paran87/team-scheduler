@@ -1,7 +1,6 @@
-import { teamLabel, type ActivityMember } from "@/lib/activity-notes";
-import { TEAM_META } from "@/lib/schedule-data";
-import { personInitials } from "@/lib/team-roster";
-import type { BlockTeam, TeamKey } from "@/lib/types";
+import { blockTeamVisual, teamLabel, type ActivityMember } from "@/lib/activity-notes";
+import { isTeamKey, personInitials } from "@/lib/team-roster";
+import type { BlockTeam } from "@/lib/types";
 import { TeamAvatar } from "./TeamAvatar";
 
 type TeamCompositionCardProps = {
@@ -12,16 +11,23 @@ type TeamCompositionCardProps = {
 };
 
 export function TeamCompositionCard({ team, members, location, custom }: TeamCompositionCardProps) {
-  const meta = team === "special" ? null : TEAM_META[team];
+  const meta = blockTeamVisual(team);
+  const isGuest = team === "guest";
 
   return (
     <section className="day-composition-card">
       <header className="day-composition-header">
         <div className="day-composition-team">
-          <span className="overview-team" style={{ background: meta?.color ?? "var(--special)" }}>
+          <span className="overview-team" style={{ background: meta.color }}>
             {teamLabel(team)}
           </span>
-          {team !== "special" ? <TeamAvatar teamKey={team as TeamKey} size={40} /> : <span className="admin-special-star">★</span>}
+          {isTeamKey(team) ? (
+            <TeamAvatar teamKey={team} size={40} />
+          ) : team === "special" ? (
+            <span className="admin-special-star">★</span>
+          ) : (
+            <span className="admin-guest-mark">{members[0] ? personInitials(members[0].name) : "•"}</span>
+          )}
         </div>
         <div className="day-composition-summary">
           <strong>
@@ -29,11 +35,15 @@ export function TeamCompositionCard({ team, members, location, custom }: TeamCom
           </strong>
           <span>
             {location || "—"}
-            {custom
+            {isGuest
               ? members.length === 1
-                ? " · Assigned person for this date"
-                : " · Custom for this date"
-              : " · Original team composition"}
+                ? " · Independent assignment"
+                : " · Independent people for this date"
+              : custom
+                ? members.length === 1
+                  ? " · Assigned person for this date"
+                  : " · Custom for this date"
+                : " · Original team composition"}
           </span>
         </div>
       </header>
@@ -50,13 +60,15 @@ export function TeamCompositionCard({ team, members, location, custom }: TeamCom
               )}
               <div className="admin-member-meta">
                 <strong>{member.name}</strong>
-                <span>{member.title || "Team Member"}</span>
+                <span>{member.title || (isGuest ? "Independent" : "Team Member")}</span>
               </div>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="admin-member-empty">No personnel listed for this team on this date.</p>
+        <p className="admin-member-empty">
+          {isGuest ? "No independent people listed for this date." : "No personnel listed for this team on this date."}
+        </p>
       )}
     </section>
   );

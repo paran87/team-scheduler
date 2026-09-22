@@ -4,9 +4,9 @@ import { useMemo } from "react";
 import type { ReactNode } from "react";
 import { daysInMonth, dotColor, isToday } from "@/lib/calendar";
 import { buildMonthlyReport } from "@/lib/monthly-report";
-import { findNote, toDateKey } from "@/lib/activity-notes";
-import { soloAssignee } from "@/lib/activity-composition";
-import { MONTH_NAMES, TEAM_META } from "@/lib/schedule-data";
+import { findNote, toDateKey, blockTeamVisual, teamLabel } from "@/lib/activity-notes";
+import { assignedPeopleLabel, soloAssignee } from "@/lib/activity-composition";
+import { MONTH_NAMES } from "@/lib/schedule-data";
 import { buildVisibleDayMap } from "@/lib/schedule-merge";
 import { shortFirstName } from "@/lib/team-roster";
 import type { ScheduleBlock, TeamKey } from "@/lib/types";
@@ -296,16 +296,17 @@ export function CalendarGrid({
                   <>
                     <div className="cell-events">
                       {visible.map((entry, index) => {
-                        const meta = TEAM_META[entry.team as TeamKey];
+                        const meta = blockTeamVisual(entry.team);
                         const span = spanLabel(entry, cell.day);
-                        const assigned =
-                          entry.team === "special"
-                            ? null
-                            : soloAssignee(findNote(notes, toDateKey(viewYear, viewMonth, cell.day), entry.team));
-                        const place = entry.place || entry.event || "Scheduled";
-                        const chipText = assigned
-                          ? [shortFirstName(assigned.name), entry.place || entry.event].filter(Boolean).join(" · ")
-                          : place;
+                        const note = findNote(notes, toDateKey(viewYear, viewMonth, cell.day), entry.team);
+                        const assigned = entry.team === "special" ? null : soloAssignee(note);
+                        const people = entry.team === "guest" ? assignedPeopleLabel(note) : "";
+                        const place = entry.place || entry.event || (entry.team === "guest" ? "Independent" : "Scheduled");
+                        const chipText = people
+                          ? [people, entry.place || entry.event].filter(Boolean).join(" · ")
+                          : assigned
+                            ? [shortFirstName(assigned.name), entry.place || entry.event].filter(Boolean).join(" · ")
+                            : place;
                         return (
                           <div key={`${entry.team}-${index}`} className={`event-chip ${meta.chip}`}>
                             <span className="dot-sm" style={{ background: dotColor(entry.team) }} />
@@ -376,7 +377,7 @@ export function CalendarGrid({
                   <span>
                     <strong>{item.location}</strong>
                     <em>
-                      {item.teams.map((team) => TEAM_META[team].label.replace("Team ", "")).join(" · ")} · {item.coverage}
+                      {item.teams.map((team) => teamLabel(team).replace("Team ", "")).join(" · ")} · {item.coverage}
                     </em>
                   </span>
                 </li>
@@ -388,7 +389,7 @@ export function CalendarGrid({
         </div>
         <div className="cal-pulse-col is-hint">
           <h3>How to read</h3>
-          <p>Colored bands mark which teams are in the field. Pins are sites, clocks are meetings, and red days are special events. Open any date for the full brief.</p>
+          <p>Colored bands mark which teams are in the field. Pins are sites, clocks are meetings, red days are special events, and slate chips are people with no team. Open any date for the full brief.</p>
         </div>
       </section>
     </div>

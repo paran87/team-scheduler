@@ -3,7 +3,7 @@ import { activityId } from "./calendar";
 import { getPlaceCoords } from "./place-coords";
 import { getVisibleBlocks } from "./schedule-merge";
 import { TEAM_META } from "./schedule-data";
-import { TEAM_ROSTERS } from "./team-roster";
+import { isTeamKey, TEAM_ROSTERS } from "./team-roster";
 import type { ScheduleBlock, TeamKey } from "./types";
 
 export type MapPin = {
@@ -46,7 +46,7 @@ export function getMapPins(year: number, monthIndex: number, notes: ActivityNote
   const seen = new Set<string>();
 
   for (const block of getVisibleBlocks(year, monthIndex, notes)) {
-    if (block.team === "special") continue;
+    if (!isTeamKey(block.team)) continue;
     const place = block.place;
     if (!place) continue;
     const coords = coordsForBlock(block, notes, year, monthIndex, place);

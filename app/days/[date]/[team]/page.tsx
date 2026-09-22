@@ -5,6 +5,7 @@ import { TeamCompositionCard } from "@/components/TeamCompositionCard";
 import { membersForDate } from "@/lib/activity-composition";
 import { isBlockTeam, parseDateKey, scheduledEvent, scheduledLocation, teamLabel } from "@/lib/activity-notes";
 import { readActivityNotes } from "@/lib/activity-store";
+import { readExtraRosterMembers } from "@/lib/team-roster-store";
 import { DAY_NAMES, MONTH_NAMES } from "@/lib/schedule-data";
 
 export const dynamic = "force-dynamic";
@@ -35,6 +36,7 @@ export default async function DayTeamCompositionPage({ params }: PageProps) {
   if (!parseDateKey(date) || !isBlockTeam(team)) notFound();
 
   const notes = await readActivityNotes();
+  await readExtraRosterMembers();
   const { members, custom, note } = membersForDate(team, date, notes);
   const location = (note?.location || scheduledLocation(date, team) || note?.event || scheduledEvent(date, team) || "").trim();
 

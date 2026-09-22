@@ -8,10 +8,11 @@ import {
   scheduledEvent,
   scheduledLocation,
   teamLabel,
+  blockTeamVisual,
 } from "@/lib/activity-notes";
 import { readActivityNote, resolveReportImages } from "@/lib/activity-store";
 import { BRAND_NAME } from "@/lib/brand";
-import { DAY_NAMES, MONTH_NAMES, TEAM_META } from "@/lib/schedule-data";
+import { DAY_NAMES, MONTH_NAMES } from "@/lib/schedule-data";
 import { homeTabHref } from "@/lib/tabs";
 
 export const dynamic = "force-dynamic";
@@ -56,11 +57,11 @@ export default async function ActivityReportPage({ params }: PageProps) {
   const event = (note?.event || scheduledEvent(parsed.date, parsed.team) || "").trim();
   const activity = (note?.activity || "").trim();
   const report = (note?.remarks || "").trim();
-  const meta = parsed.team === "special" ? null : TEAM_META[parsed.team];
+  const visual = blockTeamVisual(parsed.team);
   const back = { href: homeTabHref("activity"), label: "← Activities" };
 
-  const teamColor = meta ? meta.color : "var(--special)";
-  const teamName = meta ? meta.label : "Special Event";
+  const teamColor = visual.color;
+  const teamName = visual.label;
   const place = location || event || teamLabel(parsed.team);
   const weekday = weekdayName(parsed.date);
 

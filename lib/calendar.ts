@@ -39,6 +39,7 @@ export function dotColor(team: BlockTeam) {
   if (team === "usec") return "var(--usec)";
   if (team === "b") return "var(--teamb)";
   if (team === "a") return "var(--teama)";
+  if (team === "guest") return "var(--guest)";
   return "var(--special)";
 }
 

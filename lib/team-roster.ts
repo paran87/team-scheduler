@@ -1,16 +1,52 @@
 import { TEAM_META } from "./schedule-data";
 import type { ActivityMember } from "./activity-notes";
-import type { TeamKey } from "./types";
-
-const TEAM_KEYS: TeamKey[] = ["usec", "b", "a"];
+import type { BlockTeam, TeamKey } from "./types";
 
 export type RosterPerson = ActivityMember & { team: TeamKey };
 
 export type TeamPerson = {
+  id?: string;
   name: string;
   title: string;
   photo?: string;
+  extra?: boolean;
 };
+
+export type ExtraRosterMember = {
+  id: string;
+  team: TeamKey;
+  name: string;
+  title: string;
+  photo?: string;
+  photoPath?: string;
+};
+
+export const TEAM_ROSTER_CHANNEL = "team-roster";
+export const TEAM_KEYS: TeamKey[] = ["usec", "b", "a"];
+
+let extraRosterCache: ExtraRosterMember[] = [];
+
+export function extraRosterMembers() {
+  return extraRosterCache;
+}
+
+export function setExtraRosterMembers(members: ExtraRosterMember[]) {
+  extraRosterCache = members;
+}
+
+export function extraMemberRosterId(team: TeamKey, id: string) {
+  return `${team}__extra-${id}`;
+}
+
+export function parseExtraMemberRosterId(value: string) {
+  for (const team of TEAM_KEYS) {
+    const prefix = `${team}__extra-`;
+    if (value.startsWith(prefix)) {
+      return { team, id: value.slice(prefix.length) };
+    }
+  }
+  return null;
+}
 
 export type TeamRoster = {
   team: TeamKey;
@@ -80,9 +116,27 @@ export function personInitials(name: string) {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
+export function extrasForTeam(team: TeamKey, extras: ExtraRosterMember[] = extraRosterCache) {
+  return extras.filter((member) => member.team === team);
+}
+
+export function mergeTeamRoster(roster: TeamRoster, extras: ExtraRosterMember[] = extraRosterCache): TeamRoster {
+  const extraPeople = extrasForTeam(roster.team, extras).map((member) => ({
+    id: extraMemberRosterId(member.team, member.id),
+    name: member.name,
+    title: member.title,
+    ...(member.photo ? { photo: member.photo } : {}),
+    extra: true,
+  }));
+  return { ...roster, members: [...roster.members, ...extraPeople] };
+}
+
 /** Flat base roster for a team. Used as the starting point for activity-specific composition. */
-export function baseActivityMembers(team: TeamKey | "special"): ActivityMember[] {
-  if (team === "special") return [];
+export function baseActivityMembers(
+  team: BlockTeam,
+  extras: ExtraRosterMember[] = extraRosterCache,
+): ActivityMember[] {
+  if (team === "special" || team === "guest") return [];
   const roster = TEAM_ROSTERS[team];
   return [
     {
@@ -93,6 +147,12 @@ export function baseActivityMembers(team: TeamKey | "special"): ActivityMember[]
     },
     ...roster.members.map((member, index) => ({
       id: `${team}__member-${index}`,
+      name: member.name,
+      title: member.title,
+      ...(member.photo ? { photo: member.photo } : {}),
+    })),
+    ...extrasForTeam(team, extras).map((member) => ({
+      id: extraMemberRosterId(member.team, member.id),
       name: member.name,
       title: member.title,
       ...(member.photo ? { photo: member.photo } : {}),
@@ -109,14 +169,14 @@ export function toActivityMember(person: Pick<ActivityMember, "id" | "name" | "t
   };
 }
 
-export function allRosterPeople(): RosterPerson[] {
+export function allRosterPeople(extras: ExtraRosterMember[] = extraRosterCache): RosterPerson[] {
   return TEAM_KEYS.flatMap((team) =>
-    baseActivityMembers(team).map((member) => ({ ...member, team })),
+    baseActivityMembers(team, extras).map((member) => ({ ...member, team })),
   );
 }
 
-export function findRosterPerson(id: string): RosterPerson | undefined {
-  return allRosterPeople().find((person) => person.id === id);
+export function findRosterPerson(id: string, extras: ExtraRosterMember[] = extraRosterCache): RosterPerson | undefined {
+  return allRosterPeople(extras).find((person) => person.id === id);
 }
 
 export function shortFirstName(name: string) {

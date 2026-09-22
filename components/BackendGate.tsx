@@ -31,16 +31,25 @@ export function BackendGate() {
   if (unlocked) return <BackendConsole />;
 
   return (
-    <div className="backend-page backend-login-page">
-      <header className="backend-header">
-        <div className="backend-header-inner">
-          <div className="brand-block">
+    <div className="admin-console-wrap backend-page backend-login-page">
+      <header className="admin-topbar">
+        <div className="admin-topbar-stripe" aria-hidden />
+        <div className="admin-topbar-inner">
+          <div className="admin-brand-block">
             <BrandLogo />
-            <BrandWordmark kicker="Admin · Enter name and password to continue" />
+            <div>
+              <BrandWordmark kicker="" />
+              <span className="admin-mode-badge">
+                <span className="admin-mode-dot" aria-hidden />
+                ADMIN MODE
+              </span>
+            </div>
           </div>
-          <Link href="/" className="backend-dash-link">
-            ← Public site
-          </Link>
+          <div className="topbar-actions">
+            <Link href="/" className="admin-view-public-link">
+              ← Public site
+            </Link>
+          </div>
         </div>
       </header>
 

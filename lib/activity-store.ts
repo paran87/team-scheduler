@@ -141,15 +141,17 @@ export function rowToNote(row: ActivityNoteRow): ActivityNote | null {
   if (!parseDateKey(date)) return null;
   const members = normalizeMembers(row.members);
   const reportImages = normalizeReportImages(row.report_images);
+  // Decode guest entries that were stored under team='special' to bypass the DB constraint.
+  const { team, event } = decodeTeamFromStorage(row);
   return {
     id: row.id,
     date,
-    team: row.team,
+    team,
     location: row.location ?? "",
     activity: row.activity ?? "",
     remarks: row.remarks ?? "",
     updatedAt: row.updated_at,
-    ...(row.event ? { event: row.event } : {}),
+    ...(event ? { event } : {}),
     ...(row.hidden ? { hidden: true } : {}),
     ...(row.lat != null && row.lng != null ? { lat: row.lat, lng: row.lng } : {}),
     ...(members ? { members } : {}),
@@ -157,15 +159,45 @@ export function rowToNote(row: ActivityNoteRow): ActivityNote | null {
   };
 }
 
+/**
+ * Supabase `team` column storage helpers.
+ *
+ * The DB check constraint currently only allows ('usec','b','a','special').
+ * Until a migration adds 'guest', we store guest entries as team='special'
+ * with a '__guest__' prefix on the event field so we can round-trip them.
+ * This is completely transparent to the rest of the app.
+ */
+const GUEST_STORAGE_PREFIX = "__guest__";
+
+function encodeTeamForStorage(note: ActivityNote): { team: string; event: string | null } {
+  if (note.team === "guest") {
+    const orig = note.event?.trim() ?? "";
+    return {
+      team: "special",
+      event: GUEST_STORAGE_PREFIX + (orig ? "|" + orig : ""),
+    };
+  }
+  return { team: note.team, event: note.event?.trim() ? note.event : null };
+}
+
+function decodeTeamFromStorage(row: ActivityNoteRow): { team: ActivityNote["team"]; event: string | undefined } {
+  if (row.team === "special" && row.event?.startsWith(GUEST_STORAGE_PREFIX)) {
+    const orig = row.event.slice(GUEST_STORAGE_PREFIX.length).replace(/^\|/, "");
+    return { team: "guest", event: orig || undefined };
+  }
+  return { team: row.team as ActivityNote["team"], event: row.event || undefined };
+}
+
 export function noteToRow(note: ActivityNote): ActivityNoteRow {
+  const { team, event } = encodeTeamForStorage(note);
   return {
     id: note.id,
     date: toDateOnly(note.date),
-    team: note.team,
+    team,
     location: note.location,
     activity: note.activity,
     remarks: note.remarks,
-    event: note.event?.trim() ? note.event : null,
+    event,
     hidden: Boolean(note.hidden),
     lat: note.lat ?? null,
     lng: note.lng ?? null,
@@ -412,7 +444,9 @@ export async function upsertActivityNote(input: {
     assertPersistentStorageAvailable();
     const supabase = getSupabaseWriter();
     const { error } = await supabase.from("activity_notes").upsert(await persistableRow(next), { onConflict: "id" });
-    if (error) throw new Error(`Supabase upsert failed: ${error.message}`);
+    if (error) {
+      throw new Error(`Supabase upsert failed: ${error.message}`);
+    }
 
     const { data: verified, error: verifyError } = await getSupabase()
       .from("activity_notes")
