@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { CSSProperties } from "react";
 import type { Metadata } from "next";
+import { BackLink } from "@/components/BackLink";
 import { BrandLogo } from "@/components/BrandLogo";
 import { TeamCompositionBoard } from "@/components/TeamCompositionBoard";
 import { OFFICE_NAME, TEAM_ROSTERS, isTeamKey } from "@/lib/team-roster";
@@ -30,14 +32,16 @@ export default async function TeamPage({ params }: TeamPageProps) {
 
   const roster = TEAM_ROSTERS[team];
   const otherTeams = (Object.keys(TEAM_ROSTERS) as TeamKey[]).filter((key) => key !== team);
+  const memberCount = roster.members.length + 1;
 
   return (
-    <div className={`org-page team-${team}`}>
+    <div
+      className={`org-page team-${team}`}
+      style={{ "--org-accent": roster.color } as CSSProperties}
+    >
       <header className="org-header">
         <div className="org-header-inner">
-          <Link href="/" className="org-back">
-            ← Dashboard
-          </Link>
+          <BackLink initialLabel="← Dashboard" />
           <div className="org-letterhead">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/assets/dpwh-logo.png" alt="Department of Public Works and Highways" className="org-seal org-seal-dpwh" />
@@ -60,13 +64,23 @@ export default async function TeamPage({ params }: TeamPageProps) {
           </span>
           <h2>Team Composition</h2>
           <p>Organizational chart of personnel assigned to {roster.label}.</p>
+          <span className="org-member-count">
+            <span className="org-member-count-dot" style={{ background: roster.color }} />
+            {memberCount} {memberCount === 1 ? "member" : "members"}
+          </span>
         </div>
 
         <TeamCompositionBoard team={team} />
 
         <nav className="org-other-teams" aria-label="Other teams">
           {otherTeams.map((key) => (
-            <Link key={key} href={`/teams/${key}`} className="org-other-link">
+            <Link
+              key={key}
+              href={`/teams/${key}`}
+              className="org-other-link"
+              style={{ "--other-accent": TEAM_META[key].color } as CSSProperties}
+            >
+              <span className="org-other-dot" style={{ background: TEAM_META[key].color }} />
               View {TEAM_META[key].label}
             </Link>
           ))}

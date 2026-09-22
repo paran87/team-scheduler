@@ -1578,26 +1578,44 @@ footer {
 
 /* ===================== TEAM ORG CHART PAGE ===================== */
 .org-page {
+  --org-accent: var(--usec);
   min-height: 100vh;
   background:
-    radial-gradient(circle at top center, rgba(99, 102, 241, 0.16), transparent 42%),
+    radial-gradient(circle at 50% -4%, color-mix(in srgb, var(--org-accent) 18%, transparent), transparent 46%),
+    radial-gradient(circle at 94% 14%, color-mix(in srgb, var(--org-accent) 9%, transparent), transparent 32%),
     linear-gradient(180deg, #eef1ff 0%, #f4f5fb 28%, #f4f5fb 100%);
   display: flex;
   flex-direction: column;
 }
 .org-header {
+  position: relative;
   background: linear-gradient(180deg, #2a3562 0%, #354275 100%);
   color: white;
   padding: clamp(14px, 3vw, 28px) clamp(10px, 2.4vw, 28px) clamp(18px, 3.2vw, 28px);
-  border-bottom: 3px solid #c9a227;
+  border-bottom: 3px solid var(--org-accent);
   overflow: hidden;
 }
-.org-header-inner { max-width: 1200px; width: 100%; margin: 0 auto; min-width: 0; }
-.org-back {
-  display: inline-flex; color: #c9cae0; text-decoration: none; font-size: 13px; font-weight: 700;
-  margin-bottom: 18px;
+.org-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 10% 15%, rgba(255, 255, 255, 0.09), transparent 40%),
+    radial-gradient(circle at 90% 85%, color-mix(in srgb, var(--org-accent) 35%, transparent), transparent 48%);
+  pointer-events: none;
 }
-.org-back:hover { color: white; }
+.org-header-inner { max-width: 1200px; width: 100%; margin: 0 auto; min-width: 0; position: relative; z-index: 1; }
+.org-back {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: #c9cae0; text-decoration: none; font-size: 13px; font-weight: 700;
+  margin-bottom: 18px;
+  padding: 6px 12px 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  transition: background .2s ease, color .2s ease, transform .2s ease, border-color .2s ease;
+}
+.org-back:hover { color: white; background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.26); transform: translateX(-2px); }
 .org-letterhead {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -1624,10 +1642,14 @@ footer {
   color: #c9a227; font-weight: 700;
 }
 .org-main { max-width: 1100px; width: 100%; margin: 0 auto; padding: 36px 20px 64px; container-type: inline-size; }
-.org-hero { text-align: center; margin-bottom: 36px; }
+.org-hero {
+  text-align: center; margin-bottom: 40px;
+  animation: orgFadeUp .5s cubic-bezier(.2,.8,.25,1) both;
+}
 .org-hero .brand-icon {
   width: 92px; height: 92px; margin: 0 auto 18px; border-radius: 22px;
   align-items: center;
+  box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--org-accent) 60%, transparent);
 }
 .org-hero .brand-logo { object-position: center center; }
 .org-hero h1 {
@@ -1638,27 +1660,55 @@ footer {
 .org-team-pill {
   display: inline-block; color: white; font-size: 11px; font-weight: 800; letter-spacing: .08em;
   text-transform: uppercase; padding: 7px 14px; border-radius: 999px; margin-bottom: 12px;
+  box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--org-accent) 75%, transparent);
 }
 .org-hero h2 {
   margin: 0 0 8px; white-space: nowrap;
   font-size: clamp(18px, 6vw, 28px);
 }
 .org-hero p {
-  margin: 0; color: var(--muted); font-weight: 600; white-space: nowrap;
+  margin: 0 0 14px; color: var(--muted); font-weight: 600; white-space: nowrap;
   font-size: clamp(8px, 2.6vw, 15px);
 }
+.org-member-count {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 11.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--muted);
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 14px 6px 10px;
+  box-shadow: var(--shadow);
+}
+.org-member-count-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
-.org-chart { display: flex; flex-direction: column; align-items: center; }
-.org-stem { width: 2px; height: 34px; }
-.org-rail { height: 2px; max-width: 100%; }
+.org-chart {
+  display: flex; flex-direction: column; align-items: center;
+  animation: orgFadeUp .55s .08s cubic-bezier(.2,.8,.25,1) both;
+}
+.org-stem { width: 2px; height: 34px; position: relative; }
+.org-stem::after {
+  content: ""; position: absolute; left: 50%; bottom: -4px; transform: translateX(-50%);
+  width: 8px; height: 8px; border-radius: 50%; background: var(--org-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--org-accent) 22%, transparent);
+}
+.org-rail {
+  height: 2px; max-width: 100%;
+  mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
+}
 .org-members { display: flex; justify-content: center; gap: 28px; flex-wrap: wrap; width: 100%; }
 .org-member-col { display: flex; flex-direction: column; align-items: center; width: 220px; }
-.org-member-stem { width: 2px; height: 28px; }
+.org-member-stem { width: 2px; height: 28px; position: relative; }
+.org-member-stem::before {
+  content: ""; position: absolute; left: 50%; top: -4px; transform: translateX(-50%);
+  width: 7px; height: 7px; border-radius: 50%; background: var(--org-accent);
+}
 
 .org-card {
   width: 220px; background: white; border-radius: 20px; padding: 22px 16px 18px;
-  text-align: center; border: 1px solid var(--border); border-top: 4px solid var(--usec);
-  box-shadow: var(--shadow); transition: transform .2s ease, box-shadow .2s ease;
+  text-align: center; border: 1px solid var(--border); border-top: 4px solid var(--org-accent);
+  box-shadow: var(--shadow); transition: transform .25s cubic-bezier(.2,.8,.25,1), box-shadow .25s ease, border-color .25s ease;
   container-type: inline-size;
   position: relative;
 }
@@ -1675,18 +1725,26 @@ footer {
   font-size: 16px;
   line-height: 1;
   cursor: pointer;
+  transition: background .15s ease, transform .15s ease;
 }
-.org-card-remove:hover { background: #fecaca; }
+.org-card-remove:hover { background: #fecaca; transform: scale(1.1); }
 .org-add-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 18px 14px 16px;
+  padding: 22px 16px 18px;
   border-style: dashed;
-  background: #fafafe;
+  border-width: 2px;
+  border-color: color-mix(in srgb, var(--org-accent) 32%, var(--border));
+  background: color-mix(in srgb, var(--org-accent) 3%, #fafafe);
+  transition: border-color .2s ease, background .2s ease;
 }
-.org-add-card:hover { transform: none; }
+.org-add-card:hover {
+  transform: none;
+  border-color: color-mix(in srgb, var(--org-accent) 55%, var(--border));
+  box-shadow: var(--shadow);
+}
 .org-add-photo {
   position: relative;
   width: 86px;
@@ -1694,10 +1752,13 @@ footer {
   border-radius: 50%;
   overflow: hidden;
   margin: 0 auto 2px;
-  background: #eef0f8;
+  background: color-mix(in srgb, var(--org-accent) 7%, white);
+  border: 2px dashed color-mix(in srgb, var(--org-accent) 42%, var(--border));
   cursor: pointer;
   display: block;
+  transition: border-color .2s ease, transform .2s ease;
 }
+.org-add-photo:hover { border-color: var(--org-accent); transform: scale(1.04); }
 .org-add-photo input { display: none; }
 .org-add-photo-empty {
   width: 100%;
@@ -1746,16 +1807,21 @@ footer {
   font-weight: 700;
   color: var(--ink);
   background: white;
+  transition: border-color .15s ease, box-shadow .15s ease;
 }
 .org-add-field input:focus {
   outline: none;
-  border-color: var(--usec);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  border-color: var(--org-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--org-accent) 18%, transparent);
 }
 .org-add-submit {
   width: 100%;
   flex: none;
   margin-top: 4px;
+}
+.org-add-card .org-add-submit {
+  background: linear-gradient(135deg, var(--org-accent), color-mix(in srgb, var(--org-accent) 55%, white));
+  box-shadow: 0 10px 20px -12px color-mix(in srgb, var(--org-accent) 70%, transparent);
 }
 .org-add-status {
   margin: 16px auto 0;
@@ -1766,13 +1832,24 @@ footer {
   color: #065f46;
 }
 .org-add-status.is-error { color: #b91c1c; }
-.org-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+.org-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); border-color: color-mix(in srgb, var(--org-accent) 30%, var(--border)); }
 .org-card.featured {
-  width: 280px; padding: 26px 18px 20px; box-shadow: var(--shadow-lg);
+  width: 280px; padding: 28px 20px 22px; box-shadow: var(--shadow-lg);
+  border-top-width: 5px;
+  background: linear-gradient(160deg, #ffffff 0%, color-mix(in srgb, var(--org-accent) 5%, white) 100%);
 }
 .org-photo-wrap {
   width: 86px; height: 86px; border-radius: 50%; overflow: hidden; margin: 0 auto 14px;
   background: #eef0f8;
+  position: relative;
+}
+.org-photo-wrap::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--org-accent) 32%, transparent);
+  pointer-events: none;
 }
 .org-card.featured .org-photo-wrap { width: 112px; height: 112px; }
 .org-photo { width: 100%; height: 100%; object-fit: cover; object-position: center 18%; display: block; }
@@ -1798,13 +1875,27 @@ footer {
 
 .org-other-teams {
   display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-top: 48px;
+  animation: orgFadeUp .6s .14s cubic-bezier(.2,.8,.25,1) both;
 }
 .org-other-link {
+  display: inline-flex; align-items: center; gap: 8px;
   text-decoration: none; color: var(--ink); font-weight: 800; font-size: 13px;
   background: white; border: 1px solid var(--border); border-radius: 999px;
-  padding: 10px 16px; box-shadow: var(--shadow);
+  padding: 10px 18px 10px 14px; box-shadow: var(--shadow);
+  transition: transform .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease;
 }
-.org-other-link:hover { transform: translateY(-2px); border-color: var(--usec); color: var(--usec); }
+.org-other-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.org-other-link:hover {
+  transform: translateY(-2px);
+  border-color: var(--other-accent, var(--usec));
+  color: var(--other-accent, var(--usec));
+  box-shadow: 0 12px 22px -14px var(--other-accent, var(--usec));
+}
+
+@keyframes orgFadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 @media (max-width: 720px) {
   .org-hero .brand-icon { width: 72px; height: 72px; margin-bottom: 14px; }
