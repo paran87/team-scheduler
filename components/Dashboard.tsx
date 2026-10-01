@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { shiftMonth } from "@/lib/calendar";
+import { initialCalendarView, shiftMonth } from "@/lib/calendar";
 import { homeTabHref, TAB_STORAGE_KEY } from "@/lib/tabs";
 import type { TabName } from "@/lib/types";
 import { TopBar } from "./TopBar";
@@ -18,8 +18,8 @@ import { ActivityNotesProvider } from "./ActivityNotesProvider";
 
 export function Dashboard({ initialTab }: { initialTab: TabName }) {
   const router = useRouter();
-  const [viewYear, setViewYear] = useState(2026);
-  const [viewMonth, setViewMonth] = useState(8);
+  const [viewYear, setViewYear] = useState(() => initialCalendarView().year);
+  const [viewMonth, setViewMonth] = useState(() => initialCalendarView().month);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabName>(initialTab);

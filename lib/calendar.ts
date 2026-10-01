@@ -35,6 +35,11 @@ export function isToday(year: number, monthIndex: number, day: number, today = n
   );
 }
 
+/** Year and zero-based month index for the calendar’s initial view (today in local time). */
+export function initialCalendarView(now = new Date()) {
+  return { year: now.getFullYear(), month: now.getMonth() };
+}
+
 export function dotColor(team: BlockTeam) {
   if (team === "usec") return "var(--usec)";
   if (team === "b") return "var(--teamb)";

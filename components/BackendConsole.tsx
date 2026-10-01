@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { shiftMonth } from "@/lib/calendar";
+import { initialCalendarView, shiftMonth } from "@/lib/calendar";
 import { ActivityNotesProvider } from "./ActivityNotesProvider";
 import { AdminTopBar } from "./AdminTopBar";
 import { Legend } from "./Legend";
@@ -9,8 +9,8 @@ import { CalendarGrid } from "./CalendarGrid";
 import { AdminDetailPanel } from "./AdminDetailPanel";
 
 export function BackendConsole() {
-  const [viewYear, setViewYear] = useState(2026);
-  const [viewMonth, setViewMonth] = useState(8);
+  const [viewYear, setViewYear] = useState(() => initialCalendarView().year);
+  const [viewMonth, setViewMonth] = useState(() => initialCalendarView().month);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
 
