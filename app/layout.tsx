@@ -1,21 +1,21 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Plus_Jakarta_Sans, Sora } from "next/font/google";
+import { DM_Sans, Playfair_Display } from "next/font/google";
 import { TeamRosterProvider } from "@/components/TeamRosterProvider";
 import { BRAND_NAME, BRAND_TAGLINE } from "@/lib/brand";
 import "./globals.css";
 
-const plusJakarta = Plus_Jakarta_Sans({
+const dmSans = DM_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-plus-jakarta",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-dm-sans",
   display: "swap",
 });
 
-const sora = Sora({
+const playfair = Playfair_Display({
   subsets: ["latin"],
-  weight: ["600", "700", "800"],
-  variable: "--font-sora",
+  weight: ["500", "600", "700", "800"],
+  variable: "--font-playfair",
   display: "swap",
 });
 
@@ -26,8 +26,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${plusJakarta.variable} ${sora.variable}`}>
-      <body className={plusJakarta.className}>
+    <html lang="en" className={`${dmSans.variable} ${playfair.variable}`}>
+      <body className={dmSans.className}>
         <TeamRosterProvider>{children}</TeamRosterProvider>
       </body>
     </html>
