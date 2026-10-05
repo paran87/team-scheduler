@@ -22,14 +22,14 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
-  font-family: var(--font-plus-jakarta), "Plus Jakarta Sans", sans-serif;
+  font-family: var(--font-dm-sans), "DM Sans", sans-serif;
   background: radial-gradient(circle at top left, #eef1ff 0%, #f4f5fb 40%, #f4f5fb 100%);
   color: var(--ink);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
-h1, h2, h3, .brand { font-family: var(--font-sora), Sora, sans-serif; }
+h1, h2, h3, .brand { font-family: var(--font-playfair), Playfair Display, sans-serif; }
 main { flex: 1; }
 button { font-family: inherit; }
 
@@ -73,7 +73,7 @@ button { font-family: inherit; }
   position: relative;
   display: inline-block;
   width: fit-content;
-  font-family: var(--font-sora), Sora, sans-serif;
+  font-family: var(--font-playfair), Playfair Display, sans-serif;
   font-size: 28px;
   font-weight: 800;
   letter-spacing: -0.045em;
@@ -103,7 +103,7 @@ button { font-family: inherit; }
   flex-wrap: wrap;
   gap: 7px 8px;
   margin-top: 6px;
-  font-family: var(--font-sora), Sora, sans-serif;
+  font-family: var(--font-playfair), Playfair Display, sans-serif;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -225,7 +225,7 @@ button { font-family: inherit; }
 
 .nav-controls { display: flex; align-items: center; gap: 10px; }
 .month-label {
-  font-family: var(--font-sora), Sora, sans-serif;
+  font-family: var(--font-playfair), Playfair Display, sans-serif;
   font-size: 17px; font-weight: 700; min-width: 190px; text-align: center;
   background: var(--card); border: 1px solid var(--border); border-radius: 12px;
   padding: 9px 14px; box-shadow: var(--shadow);
@@ -254,7 +254,7 @@ button { font-family: inherit; }
   gap: 8px; width: 100%; min-width: 0;
   padding: 11px 10px 12px;
   border: 1px solid transparent; background: rgba(255, 255, 255, 0.45); cursor: pointer;
-  font-family: var(--font-sora), Sora, sans-serif; font-weight: 800;
+  font-family: var(--font-playfair), Playfair Display, sans-serif; font-weight: 800;
   font-size: 13px; color: var(--muted);
   border-radius: 16px 16px 8px 8px; position: relative; transition: transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease;
   white-space: nowrap;
@@ -520,7 +520,7 @@ button { font-family: inherit; }
   margin: 0;
   min-width: 10ch;
   text-align: center;
-  font-family: var(--font-sora), Sora, sans-serif;
+  font-family: var(--font-playfair), Playfair Display, sans-serif;
   font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -710,7 +710,7 @@ button { font-family: inherit; }
   text-align: center;
 }
 .cal-ring-center strong {
-  font-family: var(--font-sora), Sora, sans-serif;
+  font-family: var(--font-playfair), Playfair Display, sans-serif;
   font-size: 18px;
   font-weight: 800;
   color: #fff;
@@ -752,7 +752,7 @@ button { font-family: inherit; }
 .cal-board { padding: 18px 22px 10px; }
 .weekday-row { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
 .weekday-row div {
-  text-align: center; font-family: var(--font-sora), Sora, sans-serif; font-size: 12px; font-weight: 700;
+  text-align: center; font-family: var(--font-playfair), Playfair Display, sans-serif; font-size: 12px; font-weight: 700;
   letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 7px 0;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.55);
@@ -802,7 +802,7 @@ button { font-family: inherit; }
 .cal-cell-bands i { flex: 1; display: block; }
 .cell-top { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
 .cell-num {
-  font-family: var(--font-sora), Sora, sans-serif; font-weight: 800; font-size: 16px; color: var(--ink);
+  font-family: var(--font-playfair), Playfair Display, sans-serif; font-weight: 800; font-size: 16px; color: var(--ink);
   width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 8px;
 }
 .cal-cell.is-today .cell-num { background: var(--usec); color: white; }
@@ -844,7 +844,7 @@ button { font-family: inherit; }
 .special-label {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
   text-align: center; color: white; gap: 4px;
-  font-family: var(--font-sora), Sora, sans-serif; font-weight: 800; font-size: 12.5px;
+  font-family: var(--font-playfair), Playfair Display, sans-serif; font-weight: 800; font-size: 12.5px;
   letter-spacing: .04em; text-transform: uppercase; line-height: 1.3;
 }
 .cal-special-mark {
@@ -923,7 +923,7 @@ button { font-family: inherit; }
 .detail-panel.open { transform: translateX(0); opacity: 1; pointer-events: auto; }
 .empty-icon { font-size: 44px; }
 .detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
-.detail-date-big { font-family: var(--font-sora), Sora, sans-serif; font-size: 26px; font-weight: 800; line-height: 1.1; }
+.detail-date-big { font-family: var(--font-playfair), Playfair Display, sans-serif; font-size: 26px; font-weight: 800; line-height: 1.1; }
 .detail-date-sub { font-size: 13px; color: var(--muted); font-weight: 600; margin-top: 4px; }
 .close-btn {
   width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: #f7f7fb;
@@ -937,7 +937,7 @@ button { font-family: inherit; }
   padding: 24px; text-align: center; box-shadow: var(--shadow);
 }
 .special-card .tag { font-size: 11px; letter-spacing: .12em; opacity: .85; font-weight: 700; text-transform: uppercase; }
-.special-card .name { font-family: var(--font-sora), Sora, sans-serif; font-size: 24px; font-weight: 800; margin-top: 8px; }
+.special-card .name { font-family: var(--font-playfair), Playfair Display, sans-serif; font-size: 24px; font-weight: 800; margin-top: 8px; }
 .special-card .activity-fields { text-align: left; max-width: 280px; margin-left: auto; margin-right: auto; }
 .special-card .star { font-size: 30px; margin-bottom: 6px; }
 .team-card {
@@ -956,7 +956,7 @@ button { font-family: inherit; }
 }
 .team-photo .overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.58)); }
 .team-photo .loc-text {
-  position: relative; z-index: 1; font-family: var(--font-sora), Sora, sans-serif; font-weight: 800; font-size: 15px;
+  position: relative; z-index: 1; font-family: var(--font-playfair), Playfair Display, sans-serif; font-weight: 800; font-size: 15px;
   text-align: center; padding: 0 14px; text-transform: uppercase; letter-spacing: .03em;
 }
 .team-photo .pin { position: relative; z-index: 1; font-size: 26px; }
@@ -978,7 +978,7 @@ button { font-family: inherit; }
 }
 .avatar-fallback {
   border-radius: 50%; display: none; align-items: center; justify-content: center; color: white;
-  font-family: var(--font-sora), Sora, sans-serif; font-weight: 800; border: 2px solid #ffffff;
+  font-family: var(--font-playfair), Playfair Display, sans-serif; font-weight: 800; border: 2px solid #ffffff;
   box-shadow: 0 2px 8px rgba(20, 20, 50, 0.25);
 }
 .chip-usec-solid { background: var(--usec); }
@@ -1348,7 +1348,7 @@ button { font-family: inherit; }
 }
 .admin-report-open:hover { text-decoration: underline; }
 .activity-date-badge {
-  font-family: var(--font-sora), Sora, sans-serif; font-weight: 800; font-size: 13px; text-align: center; line-height: 1.2;
+  font-family: var(--font-playfair), Playfair Display, sans-serif; font-weight: 800; font-size: 13px; text-align: center; line-height: 1.2;
   background: #f0f1f8; color: var(--ink); border-radius: 12px; padding: 8px 12px; min-width: 64px;
 }
 .activity-card.special .activity-date-badge { background: rgba(255, 255, 255, 0.22); color: white; }
@@ -1421,7 +1421,7 @@ button { font-family: inherit; }
 .assignment-table tbody tr:last-child td { border-bottom: none; }
 .assignment-table tbody tr:hover td { background: #fbfbfe; }
 .assignment-region {
-  font-family: var(--font-sora), Sora, sans-serif; font-weight: 800; font-size: 13px;
+  font-family: var(--font-playfair), Playfair Display, sans-serif; font-weight: 800; font-size: 13px;
   color: var(--ink); white-space: nowrap; width: 110px; background: #fafbff;
 }
 .assignment-location { font-weight: 700; }
@@ -1855,7 +1855,7 @@ footer {
 .org-photo { width: 100%; height: 100%; object-fit: cover; object-position: center 18%; display: block; }
 .org-initials {
   width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-  color: white; font-family: var(--font-sora), Sora, sans-serif; font-weight: 800; font-size: 28px;
+  color: white; font-family: var(--font-playfair), Playfair Display, sans-serif; font-weight: 800; font-size: 28px;
 }
 .org-card h3 {
   margin: 0 0 6px; font-size: 14px; line-height: 1.3;
@@ -2001,7 +2001,7 @@ footer {
   min-width: 0;
 }
 .cr-clock strong, .cr-status strong {
-  font-family: var(--font-sora), Sora, sans-serif;
+  font-family: var(--font-playfair), Playfair Display, sans-serif;
   font-size: 14px;
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -2024,7 +2024,7 @@ footer {
   border-left: 1px solid rgba(255, 255, 255, 0.12);
 }
 .cr-meta b {
-  font-family: var(--font-sora), Sora, sans-serif;
+  font-family: var(--font-playfair), Playfair Display, sans-serif;
   font-size: 15px;
   font-weight: 800;
   color: #f2c86b;
@@ -2104,7 +2104,7 @@ footer {
   border: none;
   cursor: pointer;
   text-decoration: none;
-  font-family: var(--font-sora), Sora, sans-serif;
+  font-family: var(--font-playfair), Playfair Display, sans-serif;
   color: #1c1e2b;
   font-weight: 800;
   font-size: 12px;
@@ -2409,7 +2409,7 @@ footer {
   padding: 16px 18px; box-shadow: var(--shadow);
 }
 .backend-stat span { display: block; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
-.backend-stat strong { display: block; margin-top: 6px; font-size: 28px; font-family: var(--font-sora), Sora, sans-serif; }
+.backend-stat strong { display: block; margin-top: 6px; font-size: 28px; font-family: var(--font-playfair), Playfair Display, sans-serif; }
 .backend-grid { display: grid; grid-template-columns: minmax(280px, 380px) minmax(0, 1fr); gap: 18px; align-items: start; }
 .backend-card {
   background: var(--card); border: 1px solid var(--border); border-radius: 20px;
@@ -2997,7 +2997,7 @@ footer {
 }
 .overview-hero-date {
   margin: 0 0 2px;
-  font-family: var(--font-sora), Sora, sans-serif;
+  font-family: var(--font-playfair), Playfair Display, sans-serif;
   font-size: 13px;
   font-weight: 700;
   color: #f2c86b;
@@ -3036,7 +3036,7 @@ footer {
   text-align: center;
 }
 .overview-ring-center strong {
-  font-family: var(--font-sora), Sora, sans-serif;
+  font-family: var(--font-playfair), Playfair Display, sans-serif;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: -0.01em;
@@ -3109,7 +3109,7 @@ footer {
 .overview-stat-body { min-width: 0; }
 .overview-stats .overview-stat strong {
   display: block;
-  font-family: var(--font-sora), Sora, sans-serif;
+  font-family: var(--font-playfair), Playfair Display, sans-serif;
   font-size: 32px;
   font-weight: 800;
   line-height: 1;
@@ -3203,7 +3203,7 @@ footer {
 }
 .overview-week-day.is-today .ovw-dow { color: var(--usec); }
 .ovw-num {
-  font-family: var(--font-sora), Sora, sans-serif;
+  font-family: var(--font-playfair), Playfair Display, sans-serif;
   font-size: 19px;
   font-weight: 800;
   line-height: 1;
@@ -3238,7 +3238,7 @@ footer {
 .overview-stat-icon { font-size: 22px; line-height: 1; }
 .overview-stat strong {
   display: block;
-  font-family: var(--font-sora), Sora, sans-serif;
+  font-family: var(--font-playfair), Playfair Display, sans-serif;
   font-size: 28px;
   font-weight: 800;
   line-height: 1.1;
@@ -3284,7 +3284,7 @@ footer {
 }
 .overview-time {
   white-space: nowrap;
-  font-family: var(--font-sora), Sora, sans-serif;
+  font-family: var(--font-playfair), Playfair Display, sans-serif;
   font-weight: 800;
 }
 .overview-team {
@@ -3357,7 +3357,7 @@ footer {
 .ov-water.is-front { opacity: 0.75; animation: ov-swell 6s ease-in-out infinite .8s; }
 .overview-empty-state h4 {
   margin: 0 0 6px;
-  font-family: var(--font-sora), Sora, sans-serif;
+  font-family: var(--font-playfair), Playfair Display, sans-serif;
   font-size: clamp(17px, 2.4vw, 21px);
   font-weight: 800;
   color: var(--ink);
