@@ -280,6 +280,9 @@ button { font-family: inherit; }
 .tab-btn.tab-calendar::before { background: linear-gradient(90deg, #0f766e, var(--teamb)); }
 .tab-btn.tab-activity::before { background: linear-gradient(90deg, #d97706, var(--teama)); }
 .tab-btn.tab-reports::before { background: linear-gradient(90deg, #be185d, #ec4899); }
+.tab-btn.tab-portal::before { background: linear-gradient(90deg, #0369a1, #0ea5e9); }
+.tab-btn.tab-portal .tab-icon { background: #e0f2fe; color: #0369a1; }
+a.tab-btn { text-decoration: none; }
 .tab-btn.tab-dashboard .tab-icon { background: var(--usec-light); color: #4338ca; }
 .tab-btn.tab-calendar .tab-icon { background: var(--teamb-light); color: #047857; }
 .tab-btn.tab-activity .tab-icon { background: var(--teama-light); color: #b45309; }

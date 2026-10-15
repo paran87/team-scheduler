@@ -2,3 +2,5 @@ export const BRAND_NAME = "Oplan Kontra Baha";
 export const BRAND_TAGLINE = "Field deployment calendar";
 export const BRAND_FOOTER_LINE = "Keeping every field team on track.";
 export const OKB_WEBSITE_URL = "https://okb-website-repo.vercel.app/";
+
+export const OKB_PORTAL_URL = "https://www.dpwh.gov.ph/dpwh/okb";
