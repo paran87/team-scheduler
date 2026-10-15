@@ -246,7 +246,7 @@ button { font-family: inherit; }
 /* ---------- Tab navigation ---------- */
 .tab-nav {
   max-width: 1440px; width: 100%; margin: 16px auto 0; padding: 0;
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: stretch; gap: 8px;
 }
 .tab-btn {
